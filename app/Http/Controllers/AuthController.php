@@ -52,30 +52,40 @@ class AuthController extends Controller
         return redirect()->route('frontend.index')->with('success', 'Account created successfully!');
     }
 
-    public function login(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required'
-    ]);
-
-    $credentials = $request->only('email', 'password');
-
-    if (Auth::attempt($credentials)) {
-        $request->session()->regenerate();
-
-        // ✅ role-based redirect
-        if (auth()->user()->role === 'admin') {
-            return redirect()->route('admin.dashboard')
-                             ->with('success', 'Welcome Admin!');
-        }
-
-        return redirect()->route('frontend.index')
-                         ->with('success', 'Login successful!');
+    /**
+     * Show the login form.
+     *
+     * This is used by the GET /login route.
+     */
+    public function loginForm()
+    {
+        return view('frontend.login');
     }
 
-    return back()->with('error', 'Invalid email or password');
-}
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        $credentials = $request->only('email', 'password');
+
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
+
+            // ✅ role-based redirect – admin → admin dashboard, user → user dashboard
+            if (auth()->user()->role === 'admin') {
+                return redirect()->route('admin.dashboard')
+                                 ->with('success', 'Welcome Admin!');
+            }
+
+            return redirect()->route('user.dashboard')
+                             ->with('success', 'Login successful!');
+        }
+
+        return back()->with('error', 'Invalid email or password');
+    }
 }
 
 

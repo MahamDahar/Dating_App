@@ -76,7 +76,7 @@
                                 </div>
                             @endif
 
-                            <form action="{{ route('register') }}" method="POST">
+                            <form action="{{ route('frontend.register') }}" method="POST">
                                 @csrf
                                 <h4 class="content-title">Account Details</h4>
                                 <div class="form-group">
