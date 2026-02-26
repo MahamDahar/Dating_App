@@ -1433,6 +1433,36 @@ ul.categories-list li {
         border-right: 1px solid #eee;
         box-shadow: 0 0.125rem 0.5rem rgb(0 0 0 / 28%);
     }
+
+     .content-wrapper {
+    margin-left: 260px; /* sidebar width */
+    padding: 30px 40px;
+    min-height: 100vh;
+    background: #f8f9fb;
+}
+
+.content-inner {
+    max-width: 1200px;
+    margin: auto;
+}
+
+.table {
+    width: 100%;
+    background: white;
+}
+
+/* top right icon fix */
+.top-header-icons {
+    position: absolute;
+    right: 30px;
+    top: 20px;
+}
+
+/* remove unwanted floating image spacing */
+img {
+    max-width: 100%;
+    height: auto;
+}
     
 }
 
@@ -1508,6 +1538,8 @@ ul.categories-list li {
     .footer {
         left: 0px;
     }
+
+   
     
 
 }
@@ -1528,4 +1560,5 @@ ul.categories-list li {
         width: auto;
         height: auto;
     }
+
 }

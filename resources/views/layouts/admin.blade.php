@@ -53,7 +53,7 @@
       <!--navigation-->
       <ul class="metismenu" id="menu">
         <li>
-          <a href="{{ route('frontend.index') }}">
+          <a href="{{ route('admin.dashboard') }}">
             <div class="parent-icon">
               <ion-icon name="home-outline"></ion-icon>
             </div>
@@ -61,215 +61,16 @@
           </a>
         </li>
         <li>
-          <a href="javascript:;" class="has-arrow">
-            <div class="parent-icon">
-              <ion-icon name="bag-handle-outline"></ion-icon>
-            </div>
-            <div class="menu-title">eCommerce</div>
-          </a>
-          <ul>
-            <li><a href="ecommerce-shop-grid-view.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Product Grid
-              </a>
-            </li>
-            <li><a href="ecommerce-shop-list-view.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Product List
-              </a>
-            </li>
-            <li><a href="ecommerce-shop-grid-view-top-filter.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Product Top Filters
-              </a>
-            </li>
-            <li><a href="ecommerce-product-details.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Product Details
-              </a>
-            </li>
-            <li><a href="ecommerce-product-comparison.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Product Comparison
-              </a>
-            </li>
-            <li><a href="ecommerce-shop-cart.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Shoping Cart
-              </a>
-            </li>
-            <li><a href="ecommerce-checkout-details.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Checkout
-              </a>
-            </li>
-            <li><a href="ecommerce-checkout-shipping.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Shipping
-              </a>
-            </li>
-            <li><a href="ecommerce-checkout-payment.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Payment
-              </a>
-            </li>
-            <li><a href="ecommerce-checkout-review.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Review Cart
-              </a>
-            </li>
-            <li><a href="ecommerce-checkout-complete.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Order Complete
-              </a>
-            </li>
-          </ul>
-        </li>
-        <li class="menu-label">UI Elements</li>
-        <li>
-          <a href="javascript:;" class="has-arrow">
-            <div class="parent-icon">
-              <ion-icon name="briefcase-outline"></ion-icon>
-            </div>
-            <div class="menu-title">Widgets</div>
-          </a>
-          <ul>
-            <li> <a href="widgets-static-widgets.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Static Widgets
-              </a>
-            </li>
-            <li> <a href="widgets-data-widgets.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Data Widgets
-              </a>
-            </li>
-          </ul>
-        </li>
+  <a href="{{ route('admin.index') }}">
+    <div class="parent-icon">
+      <ion-icon name="bag-handle-outline"></ion-icon>
+    </div>
+    <div class="menu-title">User Details</div>
+  </a>
+</li>
 
-        <li>
-          <a class="has-arrow" href="javascript:;">
-            <div class="parent-icon">
-              <ion-icon name="gift-outline"></ion-icon>
-            </div>
-            <div class="menu-title">Components</div>
-          </a>
-          <ul>
-            <li> <a href="component-alerts.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Alerts
-              </a>
-            </li>
-            <li> <a href="component-accordions.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Accordions
-              </a>
-            </li>
-            <li> <a href="component-badges.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Badges
-              </a>
-            </li>
-            <li> <a href="component-buttons.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Buttons
-              </a>
-            </li>
-            <li> <a href="component-cards.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Cards
-              </a>
-            </li>
-            <li> <a href="component-carousels.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Carousels
-              </a>
-            </li>
-            <li> <a href="component-list-groups.html">
-                <ion-icon name="ellipse-outline"></ion-icon>List Groups
-              </a>
-            </li>
-            <li> <a href="component-media-object.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Media Objects
-              </a>
-            </li>
-            <li> <a href="component-modals.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Modals
-              </a>
-            </li>
-            <li> <a href="component-navs-tabs.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Navs & Tabs
-              </a>
-            </li>
-            <li> <a href="component-paginations.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Pagination
-              </a>
-            </li>
-            <li> <a href="component-popovers-tooltips.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Popovers & Tooltips
-              </a>
-            </li>
-            <li> <a href="component-progress-bars.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Progress
-              </a>
-            </li>
-            <li> <a href="component-spinners.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Spinners
-              </a>
-            </li>
-            <li> <a href="component-notifications.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Notifications
-              </a>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <a class="has-arrow" href="javascript:;">
-            <div class="parent-icon">
-              <ion-icon name="leaf-outline"></ion-icon>
-            </div>
-            <div class="menu-title">Icons</div>
-          </a>
-          <ul>
-            <li> <a href="icons-line-icons.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Line Icons
-              </a>
-            </li>
-            <li> <a href="icons-boxicons.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Boxicons
-              </a>
-            </li>
-            <li> <a href="icons-feather-icons.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Feather Icons
-              </a>
-            </li>
-          </ul>
-        </li>
-        <li class="menu-label">Forms & Tables</li>
-        <li>
-          <a class="has-arrow" href="javascript:;">
-            <div class="parent-icon">
-              <ion-icon name="newspaper-outline"></ion-icon>
-            </div>
-            <div class="menu-title">Forms</div>
-          </a>
-          <ul>
-            <li> <a href="form-elements.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Form Elements
-              </a>
-            </li>
-            <li> <a href="form-input-group.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Input Groups
-              </a>
-            </li>
-            <li> <a href="form-layouts.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Forms Layouts
-              </a>
-            </li>
-            <li> <a href="form-validations.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Form Validation
-              </a>
-            </li>
-            <li> <a href="form-wizard.html">
-              <ion-icon name="ellipse-outline"></ion-icon>Form Wizard
-            </a>
-            </li>
-            <li> <a href="form-radios-and-checkboxes.html">
-              <ion-icon name="ellipse-outline"></ion-icon>Radio & Checkboxes
-            </a>
-            </li>
-            <li> <a href="form-date-time-pickes.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Date Pickers
-              </a>
-            </li>
-            <li> <a href="form-select2.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Select2
-              </a>
-            </li>
-          </ul>
-        </li>
-        <li>
+        
+        {{-- <li>
           <a class="has-arrow" href="javascript:;">
             <div class="parent-icon">
               <ion-icon name="server-outline"></ion-icon>
@@ -290,8 +91,8 @@
               </a>
             </li>
           </ul>
-        </li>
-        <li class="menu-label">Pages</li>
+        </li> --}}
+        {{-- <li class="menu-label">Pages</li>
         <li>
           <a class="has-arrow" href="javascript:;">
             <div class="parent-icon">
@@ -337,40 +138,40 @@
               </a>
             </li>
           </ul>
-        </li>
-        <li>
+        </li> --}}
+        {{-- <li>
           <a href="pages-user-profile.html">
             <div class="parent-icon">
               <ion-icon name="person-circle-outline"></ion-icon>
             </div>
             <div class="menu-title">User Profile</div>
           </a>
-        </li>
-        <li>
+        </li> --}}
+        {{-- <li>
           <a href="pages-edit-profile.html">
             <div class="parent-icon">
               <ion-icon name="create-outline"></ion-icon>
             </div>
             <div class="menu-title">Edit Profile</div>
           </a>
-        </li>
-        <li>
+        </li> --}}
+        {{-- <li>
           <a href="pages-invoices.html">
             <div class="parent-icon">
               <ion-icon name="receipt-outline"></ion-icon>
             </div>
             <div class="menu-title">Invoice</div>
           </a>
-        </li>
-        <li>
+        </li> --}}
+        {{-- <li>
           <a href="pages-to-do.html">
             <div class="parent-icon">
               <ion-icon name="shield-checkmark-outline"></ion-icon>
             </div>
             <div class="menu-title">Invoice</div>
           </a>
-        </li>
-        <li>
+        </li> --}}
+        {{-- <li>
           <a class="has-arrow" href="javascript:;">
             <div class="parent-icon">
               <ion-icon name="copy-outline"></ion-icon>
@@ -400,8 +201,8 @@
                 <ion-icon name="ellipse-outline"></ion-icon>Blank Page
               </a></li>
           </ul>
-        </li>
-        <li class="menu-label">Charts & Maps</li>
+        </li> --}}
+        {{-- <li class="menu-label">Charts & Maps</li>
         <li>
           <a class="has-arrow" href="javascript:;">
             <div class="parent-icon">
@@ -409,26 +210,8 @@
             </div>
             <div class="menu-title">Charts</div>
           </a>
-          <ul>
-            <li> <a href="charts-apex-chart.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Apex
-              </a>
-            </li>
-            <li> <a href="charts-chartjs.html">
-                <ion-icon name="ellipse-outline"></ion-icon>Chartjs
-              </a>
-            </li>
-            <li> <a href="charts-peity.html">
-              <ion-icon name="ellipse-outline"></ion-icon>Peity
-            </a>
-           </li>
-           <li> <a href="charts-other.html">
-            <ion-icon name="ellipse-outline"></ion-icon>Other Charts
-            </a>
-           </li>
-          </ul>
-        </li>
-        <li>
+        </li> --}}
+        {{-- <li>
           <a class="has-arrow" href="javascript:;">
             <div class="parent-icon">
               <ion-icon name="map-outline"></ion-icon>
@@ -445,8 +228,8 @@
               </a>
             </li>
           </ul>
-        </li>
-        <li class="menu-label">Others</li>
+        </li> --}}
+        {{-- <li class="menu-label">Others</li>
         <li>
           <a class="has-arrow" href="javascript:;">
             <div class="parent-icon">
@@ -472,23 +255,29 @@
               </ul>
             </li>
           </ul>
-        </li>
-        <li>
-          <a href="javascript:;">
-            <div class="parent-icon">
-              <ion-icon name="document-text-outline"></ion-icon>
-            </div>
-            <div class="menu-title">Documentation</div>
-          </a>
-        </li>
-        <li>
-          <a href="javascript:;">
-            <div class="parent-icon">
-              <ion-icon name="link-outline"></ion-icon>
-            </div>
-            <div class="menu-title">Support</div>
-          </a>
-        </li>
+        {{-- </li> --}}
+         <li>
+    <a href="{{ route('admin.settings') }}">
+        <div class="parent-icon">
+            <ion-icon name="settings-outline"></ion-icon>
+        </div>
+        <div class="menu-title">Settings</div>
+    </a>
+</li>
+    <a href="{{ route('logout') }}"
+       onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+        <div class="parent-icon">
+            <ion-icon name="log-out-outline"></ion-icon>
+        </div>
+        <div class="menu-title">Logout</div>
+    </a>
+
+    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">
+        @csrf
+    </form>
+</li>
+
+
       </ul>
       <!--end navigation-->
     </aside>
@@ -706,14 +495,14 @@
             <li class="nav-item dropdown dropdown-user-setting">
               <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="javascript:;" data-bs-toggle="dropdown">
                 <div class="user-setting">
-                  <img src="assets/images/avatars/06.png" class="user-img" alt="">
+                  <img src="{{asset('admin/assets/images/avatars/06.png')}}" class="user-img" alt="">
                 </div>
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
                 <li>
                   <a class="dropdown-item" href="javascript:;">
                     <div class="d-flex flex-row align-items-center gap-2">
-                      <img src="assets/images/avatars/06.png" alt="" class="rounded-circle" width="54" height="54">
+                      <img src="{{asset('admin/assets/images/avatars/06.png')}}" alt="" class="rounded-circle" width="54" height="54">
                       <div class="">
                         <h6 class="mb-0 dropdown-user-name">Jhon Deo</h6>
                         <small class="mb-0 dropdown-user-designation text-secondary">UI Developer</small>
@@ -797,7 +586,7 @@
     </header>
     <!--end top header-->
 
-  @yield('content')
+  @yield('admincontent')
 
  <!--start footer-->
     <footer class="footer">

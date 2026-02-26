@@ -2,27 +2,40 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\Userprofile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    /**
-     * User dashboard – user login ke baad yahan redirect hota hai.
-     */
     public function dashboard()
     {
-        return view('user.dashboard');
+        $totalRevenue    = 0;
+        $totalCustomers  = \App\Models\User::count();
+        $totalOrders     = 0;
+        $conversionRate  = 0;
+
+        return view('user.dashboard', compact(
+            'totalRevenue',
+            'totalCustomers',
+            'totalOrders',
+            'conversionRate'
+        ));
     }
 
-    /**
-     * User logout
-     */
     public function logout(Request $request)
     {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('frontend.login')->with('success', 'Logged out successfully.');
+        return redirect()->route('login')->with('success', 'Logged out successfully.');
+    }
+
+    // ✅ FIXED — $profile ab view ko pass ho raha hai
+    public function userprofile()
+    {
+        $profile = Userprofile::where('user_id', auth()->id())->first();
+        return view('user.userprofile', compact('profile'));
     }
 }

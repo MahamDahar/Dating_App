@@ -72,8 +72,8 @@
 						<div class="header__more">
                             <button class="default-btn dropdown-toggle" type="button" id="moreoption" data-bs-toggle="dropdown" aria-expanded="false">My Account</button>
                             <ul class="dropdown-menu" aria-labelledby="moreoption">
-                                <li><a class="dropdown-item" href="{{route('frontend.login')}}">Log In</a></li>
-                                <li><a class="dropdown-item" href="{{route('frontend.register')}}">Sign Up</a></li>
+                                <li><a class="dropdown-item" href="{{route('login')}}">Log In</a></li>
+                                <li><a class="dropdown-item" href="{{route('register')}}">Sign Up</a></li>
                             </ul>
 						</div>
 					</div>
