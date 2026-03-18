@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\UserProfile;
+use App\Models\UserProfilePhoto;
+use App\Models\ProfileView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class UserProfileController extends Controller
@@ -32,10 +35,8 @@ class UserProfileController extends Controller
 
             'nationality' => ['nullable', 'string', 'max:100'],
             'grew_up'     => ['nullable', 'string', 'max:100'],
-
-            'ethnicity' => ['nullable', 'string', 'max:255'],
-
-            'height_cm' => ['nullable', 'integer', 'min:100', 'max:250'],
+            'ethnicity'   => ['nullable', 'string', 'max:255'],
+            'height_cm'   => ['nullable', 'integer', 'min:100', 'max:250'],
 
             'marital_status' => ['nullable', 'string', Rule::in([
                 'Never Married', 'Divorced', 'Widowed',
@@ -57,11 +58,62 @@ class UserProfileController extends Controller
             'interests'   => ['nullable', 'string', 'max:500'],
             'bio'         => ['nullable', 'string', 'max:300'],
             'personality' => ['nullable', 'string', 'max:255'],
+
+            // ── NEW FIELDS ──
+            'date_of_birth'  => ['nullable', 'date', 'before:-18 years'],
+            'city'           => ['nullable', 'string', 'max:100'],
+            'country'        => ['nullable', 'string', 'max:100'],
+            'smoking'        => ['nullable', 'string', Rule::in(['Never', 'Occasionally', 'Yes, regularly', 'Prefer not to say'])],
+            'want_children'  => ['nullable', 'string', Rule::in(['Yes', 'No', 'Open to it', 'Have children already'])],
+            'num_children'   => ['nullable', 'string', Rule::in(['1', '2', '3', '4+', 'Prefer not to say'])],
+            'languages'      => ['nullable', 'string', 'max:255'],
         ];
     }
 
     // -----------------------------------------------
-    // STORE (Create or Update Profile)
+    // SHOW (View Own Profile)
+    // -----------------------------------------------
+    public function show(Request $request)
+    {
+        $profile = UserProfile::where('user_id', Auth::id())->first();
+        $photos  = UserProfilePhoto::where('user_id', Auth::id())
+                    ->orderBy('is_main', 'desc')
+                    ->orderBy('order')
+                    ->get();
+
+        // Log profile view (only for other users visiting your profile)
+        if (Auth::check() && $profile && $profile->user_id !== Auth::id()) {
+            ProfileView::updateOrCreate(
+                [
+                    'viewer_id' => Auth::id(),
+                    'viewed_id' => $profile->user_id,
+                ],
+                [
+                    'seen'      => false,
+                    'viewed_at' => now(),
+                ]
+            );
+        }
+
+        return view('user.userprofile', compact('profile', 'photos'));
+    }
+
+    // -----------------------------------------------
+    // EDIT (Open Edit Page)
+    // -----------------------------------------------
+    public function edit()
+    {
+        $profile = UserProfile::where('user_id', Auth::id())->first();
+        $photos  = UserProfilePhoto::where('user_id', Auth::id())
+                    ->orderBy('is_main', 'desc')
+                    ->orderBy('order')
+                    ->get();
+
+        return view('user.editprofile', compact('profile', 'photos'));
+    }
+
+    // -----------------------------------------------
+    // STORE (Create Profile — multi-step form)
     // -----------------------------------------------
     public function store(Request $request)
     {
@@ -75,12 +127,12 @@ class UserProfileController extends Controller
         $profile->profile_completion = $profile->calculateCompletion();
         $profile->save();
 
-        return redirect()->route('profile.show')
+        return redirect()->route('user.profile')
             ->with('success', 'Profile saved successfully!');
     }
 
     // -----------------------------------------------
-    // UPDATE (PATCH)
+    // UPDATE (PATCH — edit form)
     // -----------------------------------------------
     public function update(Request $request)
     {
@@ -94,30 +146,12 @@ class UserProfileController extends Controller
         $profile->profile_completion = $profile->calculateCompletion();
         $profile->save();
 
-        return redirect()->route('profile.show')
+        return redirect()->route('user.profile')
             ->with('success', 'Profile updated successfully!');
     }
 
     // -----------------------------------------------
-    // SHOW (View Own Profile)
-    // -----------------------------------------------
-    public function show()
-    {
-        $profile = UserProfile::where('user_id', Auth::id())->first();
-        return view('user.profile', compact('profile'));
-    }
-
-    // -----------------------------------------------
-    // EDIT (Open Edit Page With Existing Data)
-    // -----------------------------------------------
-    public function edit()
-    {
-        $profile = UserProfile::where('user_id', Auth::id())->first();
-        return view('user.editprofile', compact('profile'));
-    }
-
-    // -----------------------------------------------
-    // INDEX (Admin View All Profiles)
+    // INDEX (Admin — all profiles)
     // -----------------------------------------------
     public function index(Request $request)
     {
@@ -135,7 +169,85 @@ class UserProfileController extends Controller
     {
         UserProfile::where('user_id', Auth::id())->delete();
 
-        return redirect()->route('home')
+        return redirect()->route('user.dashboard')
             ->with('success', 'Profile deleted.');
+    }
+
+    // -----------------------------------------------
+    // UPLOAD PHOTO (AJAX)
+    // -----------------------------------------------
+    public function uploadPhoto(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+        ]);
+
+        $count = UserProfilePhoto::where('user_id', Auth::id())->count();
+
+        if ($count >= 6) {
+            return response()->json(['error' => 'Maximum 6 photos allowed.'], 422);
+        }
+
+        $path = $request->file('photo')->store('profile-photos', 'public');
+
+        $photo = UserProfilePhoto::create([
+            'user_id' => Auth::id(),
+            'path'    => $path,
+            'is_main' => $count === 0, // first photo = main
+            'order'   => $count,
+        ]);
+
+        return response()->json([
+            'id'      => $photo->id,
+            'url'     => asset('storage/' . $path),
+            'is_main' => $photo->is_main,
+        ]);
+    }
+
+    // -----------------------------------------------
+    // SET MAIN PHOTO (AJAX)
+    // -----------------------------------------------
+    public function setMainPhoto(Request $request)
+    {
+        $request->validate(['photo_id' => 'required|exists:user_profile_photos,id']);
+
+        UserProfilePhoto::where('user_id', Auth::id())
+            ->update(['is_main' => false]);
+
+        UserProfilePhoto::where('id', $request->photo_id)
+            ->where('user_id', Auth::id())
+            ->update(['is_main' => true]);
+
+        return response()->json(['success' => true]);
+    }
+
+    // -----------------------------------------------
+    // DELETE PHOTO (AJAX)
+    // -----------------------------------------------
+    public function deletePhoto(Request $request)
+    {
+        $request->validate(['photo_id' => 'required|exists:user_profile_photos,id']);
+
+        $photo = UserProfilePhoto::where('id', $request->photo_id)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if (!$photo) {
+            return response()->json(['error' => 'Photo not found.'], 404);
+        }
+
+        Storage::disk('public')->delete($photo->path);
+        $wasMain = $photo->is_main;
+        $photo->delete();
+
+        // If deleted photo was main → promote next one
+        if ($wasMain) {
+            $next = UserProfilePhoto::where('user_id', Auth::id())
+                ->orderBy('order')
+                ->first();
+            if ($next) $next->update(['is_main' => true]);
+        }
+
+        return response()->json(['success' => true]);
     }
 }

@@ -513,18 +513,6 @@
 
         .btn-view:hover { background: #333; color: white; }
 
-        .score-badge {
-            padding: 10px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--muted);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
         /* ── Empty State ─────────────────────────────── */
         .empty-state {
             text-align: center;
@@ -770,6 +758,25 @@
         }
 
         .premium-toast a:hover { background: #6d28d9; }
+        /* Card ko flex column banao */
+.match-card {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Card body flex grow kare */
+.card-body {
+    flex: 1;
+    padding: 14px 20px;
+}
+
+/* Footer hamesha bottom pe rahe */
+.card-footer {
+    margin-top: auto;
+    padding: 0 20px 18px;
+    display: flex;
+    gap: 8px;
+}
     </style>
 
     <div class="page-content-wrapper">
@@ -985,11 +992,11 @@
 
                                 <div class="card-divider"></div>
 
+                                {{-- ── Card Footer: pts score removed ── --}}
                                 <div class="card-footer" onclick="event.stopPropagation()">
                                     <button class="btn-view" onclick="openModal({{ $loop->index }})">
                                         👤 View Profile
                                     </button>
-                                    <div class="score-badge">⚡ {{ $match->match_score }}pts</div>
                                 </div>
                             </div>
 
@@ -1010,7 +1017,6 @@
                                     initial: @json(strtoupper(substr($match->user->name ?? 'U', 0, 1))),
                                     pct: {{ $pct }},
                                     color: @json($color),
-                                    score: {{ $match->match_score }},
                                     sect: @json($match->sect ?? $dash),
                                     profession: @json($match->profession ?? $dash),
                                     education: @json($match->education ?? $dash),
@@ -1056,7 +1062,7 @@
     {{-- ── PREMIUM TOAST ── --}}
     <div class="premium-toast" id="premiumToast">
         👑 This country requires Premium
-        <a href="{{ route('premium.plans') }}">Upgrade Now</a>
+        <a href="{{ route('user.premium.plans') }}">Upgrade Now</a>
     </div>
 
     {{-- ── PROFILE MODAL ── --}}
@@ -1112,10 +1118,9 @@
     </div>
 
     <script>
-        // ── Pass premium status from PHP to JS ──────────
         const isPremiumUser = {{ auth()->user()->isPremium() ? 'true' : 'false' }};
 
-        // ── Country Dropdown Logic ───────────────────────
+        // ── Country Dropdown ─────────────────────────────
         const countryBtn   = document.getElementById('countryDropdownBtn');
         const countryList  = document.getElementById('countryDropdownList');
         const countryInput = document.getElementById('countryHiddenInput');
@@ -1132,28 +1137,19 @@
             countryBtn.classList.remove('open');
         });
 
-        countryList.addEventListener('click', function (e) {
-            e.stopPropagation();
-        });
+        countryList.addEventListener('click', function (e) { e.stopPropagation(); });
 
         function selectCountry(value, label, type) {
             if (type === 'paid' && !isPremiumUser) {
-                // Show toast instead of hard redirect
                 showPremiumToast();
                 countryList.classList.remove('open');
                 countryBtn.classList.remove('open');
                 return;
             }
-
             countryInput.value = value;
             countryText.textContent = '🌍 ' + label;
-
-            document.querySelectorAll('.country-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            document.querySelector(`.country-option[data-value="${value}"]`)
-                    ?.classList.add('selected');
-
+            document.querySelectorAll('.country-option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelector(`.country-option[data-value="${value}"]`)?.classList.add('selected');
             countryList.classList.remove('open');
             countryBtn.classList.remove('open');
         }
@@ -1164,9 +1160,7 @@
             const toast = document.getElementById('premiumToast');
             toast.style.display = 'flex';
             clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.style.display = 'none';
-            }, 4000);
+            toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 4000);
         }
 
         // ── Profile Modal ────────────────────────────────
@@ -1175,11 +1169,11 @@
             if (!d) return;
 
             document.getElementById('modalAvatar').textContent = d.initial;
-            document.getElementById('modalName').textContent = d.name;
-            document.getElementById('modalSub').textContent = d.sect + ' • ' + d.grew_up;
-            document.getElementById('modalPct').textContent = d.pct + '%';
-            document.getElementById('modalPct').style.color = d.color;
-            document.getElementById('modalBar').style.width = d.pct + '%';
+            document.getElementById('modalName').textContent   = d.name;
+            document.getElementById('modalSub').textContent    = d.sect + ' • ' + d.grew_up;
+            document.getElementById('modalPct').textContent    = d.pct + '%';
+            document.getElementById('modalPct').style.color    = d.color;
+            document.getElementById('modalBar').style.width    = d.pct + '%';
             document.getElementById('modalBar').style.background = d.color;
 
             const reasonsEl = document.getElementById('modalReasons');
@@ -1196,8 +1190,7 @@
 
             const commonEl = document.getElementById('modalCommon');
             if (d.common && d.common.length) {
-                commonEl.innerHTML = d.common.map(i =>
-                    `<span class="modal-tag">${i}</span>`).join('');
+                commonEl.innerHTML = d.common.map(i => `<span class="modal-tag">${i}</span>`).join('');
                 document.getElementById('modalCommonWrap').style.display = 'block';
             } else {
                 document.getElementById('modalCommonWrap').style.display = 'none';
@@ -1214,7 +1207,6 @@
                 ['Religion',    d.religion],
                 ['Born Muslim', d.born_muslim],
                 ['Personality', d.personality],
-                ['Match Score', d.score + ' pts'],
             ];
             document.getElementById('modalRows').innerHTML = fields.map(([k, v]) =>
                 `<div class="modal-row">
@@ -1251,9 +1243,7 @@
             if (e.target === this) closeModal();
         });
 
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') closeModal();
-        });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
     </script>
 
 @endsection

@@ -25,6 +25,9 @@ return new class extends Migration
             $table->string('marital_status')->default('Single'); // "Single" or "Married"
             $table->string('city')->nullable();
             $table->timestamps();
+            $table->boolean('is_deactivated')->default(false);
+        $table->timestamp('deactivated_at')->nullable();
+        $table->timestamp('scheduled_delete_at')->nullable();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

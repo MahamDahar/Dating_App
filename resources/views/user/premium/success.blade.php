@@ -61,7 +61,48 @@
         font-size: 14px;
         color: #6b7280;
         line-height: 1.7;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
+    }
+
+    /* Plan summary pill row */
+    .plan-summary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+
+    .summary-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .pill-purple {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: white;
+    }
+
+    .pill-green {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .pill-blue {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .expires-info {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-bottom: 28px;
     }
 
     .success-perks {
@@ -92,25 +133,6 @@
     }
 
     .perk-item:last-child { border-bottom: none; }
-
-    .premium-badge-big {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: linear-gradient(135deg, #7c3aed, #a855f7);
-        color: white;
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 700;
-        margin-bottom: 24px;
-    }
-
-    .expires-info {
-        font-size: 12px;
-        color: #9ca3af;
-        margin-bottom: 28px;
-    }
 
     .btn-discover {
         display: block;
@@ -162,8 +184,10 @@
             Your account has been upgraded successfully. You now have access to all premium features!
         </div>
 
-        <div class="premium-badge-big">
-            👑 Premium Member
+        {{-- Plan summary pills --}}
+        <div class="plan-summary">
+            <span class="summary-pill pill-purple">👑 Premium Member</span>
+            <span class="summary-pill pill-blue">💬 10 Chats / month</span>
         </div>
 
         <div class="expires-info">
@@ -174,9 +198,9 @@
             <div class="success-perks-title">🔓 What's now unlocked</div>
             <div class="perk-item">🌍 Filter matches by ALL countries</div>
             <div class="perk-item">🇺🇸 USA, 🇬🇧 UK, 🇨🇦 Canada, 🇦🇪 UAE & more</div>
+            <div class="perk-item">💬 10 free chats per month</div>
             <div class="perk-item">🔍 Advanced filters</div>
             <div class="perk-item">⭐ Priority matches</div>
-            <div class="perk-item">💬 Unlimited messaging</div>
         </div>
 
         <a href="{{ route('user.discover') }}" class="btn-discover">

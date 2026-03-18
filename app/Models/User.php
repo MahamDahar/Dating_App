@@ -24,6 +24,7 @@ class User extends Authenticatable
         'city',
         'is_premium',
         'premium_expires_at',
+        'profile_visibility',
     ];
 
     protected $hidden = [

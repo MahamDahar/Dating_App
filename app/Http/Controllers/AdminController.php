@@ -3,17 +3,47 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\MarriageMatch;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
     public function dashboard()
     {
-         $totalUsers = User::count();
-        return view('admin.dashboard',  compact('totalUsers'));
+        $totalUsers = User::count();
+
+        // Total Subscribers — safely check column exists first
+        try {
+            $totalSubscribers = User::where('is_premium', true)->count();
+        } catch (\Exception $e) {
+            $totalSubscribers = 0;
+        }
+
+        // Total Matches
+        try {
+            $totalMatches = MarriageMatch::count();
+        } catch (\Exception $e) {
+            $totalMatches = 0;
+        }
+
+        // Total Revenue from premium users (simple estimate)
+        try {
+            $totalRevenue = User::where('is_premium', true)->count() * 4;
+            // $4 per subscriber (monthly plan price) — adjust as needed
+        } catch (\Exception $e) {
+            $totalRevenue = 0;
+        }
+
+        return view('admin.dashboard', compact(
+            'totalUsers',
+            'totalSubscribers',
+            'totalMatches',
+            'totalRevenue'
+        ));
     }
 
     public function userList(Request $request)
@@ -22,8 +52,7 @@ class AdminController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-
-            $users->where(function($query) use ($search) {
+            $users->where(function ($query) use ($search) {
                 $query->where('username', 'like', "%$search%")
                       ->orWhere('name', 'like', "%$search%")
                       ->orWhere('email', 'like', "%$search%")
@@ -31,7 +60,7 @@ class AdminController extends Controller
             });
         }
 
-        $users = $users->paginate(2)->withQueryString();
+        $users = $users->paginate(5)->withQueryString();
 
         return view('admin.index', compact('users'));
     }
@@ -44,12 +73,43 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'User deleted successfully');
     }
 
+    // ── Login as any user ──
+    public function loginAsUser($id)
+    {
+        $user = User::findOrFail($id);
+
+        session(['admin_user_id' => Auth::id()]);
+
+        Auth::login($user);
+
+        return redirect()->route('user.dashboard')
+            ->with('success', 'Logged in as ' . $user->name . '. Click "Return to Admin" to go back.');
+    }
+
+    // ── Return back to admin account ──
+    public function returnToAdmin()
+    {
+        $adminId = session('admin_user_id');
+
+        if (!$adminId) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        $admin = User::findOrFail($adminId);
+
+        session()->forget('admin_user_id');
+
+        Auth::login($admin);
+
+        return redirect()->route('admin.dashboard')
+            ->with('success', 'Welcome back, Admin!');
+    }
+
     public function logout(Request $request)
     {
         Auth::logout();
-
-        $request->session()->invalidate(); 
-        $request->session()->regenerateToken(); 
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return redirect()->route('frontend.index')
                          ->with('success', 'Logged out successfully');
@@ -74,16 +134,16 @@ class AdminController extends Controller
         $user = auth()->user();
 
         $request->validate([
-            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:6|confirmed',
-            'role' => 'required|string',
-            'birthday' => 'nullable|date',
-            'gender' => 'nullable|string',
-            'looking_for' => 'nullable|string|max:255',
+            'username'       => 'required|string|max:255|unique:users,username,' . $user->id,
+            'name'           => 'required|string|max:255',
+            'email'          => 'required|email|max:255|unique:users,email,' . $user->id,
+            'password'       => 'nullable|string|min:6|confirmed',
+            'role'           => 'required|string',
+            'birthday'       => 'nullable|date',
+            'gender'         => 'nullable|string',
+            'looking_for'    => 'nullable|string|max:255',
             'marital_status' => 'nullable|string',
-            'city' => 'nullable|string|max:255',
+            'city'           => 'nullable|string|max:255',
         ]);
 
         $data = $request->only([
@@ -112,9 +172,12 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
 
-        $data = $request->only(['username', 'name', 'email', 'role', 'birthday', 'gender', 'looking_for', 'marital_status', 'city']);
+        $data = $request->only([
+            'username', 'name', 'email', 'role',
+            'birthday', 'gender', 'looking_for', 'marital_status', 'city'
+        ]);
 
-        if($request->filled('password')) {
+        if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
 

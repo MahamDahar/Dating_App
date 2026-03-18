@@ -271,7 +271,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Personal Information -->
+                                {{-- <!-- Personal Information -->
                                 <div class="mb-4">
                                     <h6 class="mb-3 text-primary border-bottom pb-2">
                                         <ion-icon name="person-outline" class="align-middle"></ion-icon>
@@ -356,7 +356,7 @@
                                             @enderror
                                         </div>
                                     </div>
-                                </div>
+                                </div> --}}
 
                                 <!-- Action Buttons -->
                                 <div class="d-flex gap-2 justify-content-end border-top pt-3">
