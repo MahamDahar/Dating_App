@@ -14,6 +14,24 @@
     <link rel="stylesheet" href="{{ asset('assets/css/swiper.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/lightcase.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <style>
+        .password-wrap { position: relative; }
+        .password-wrap .my-form-control { padding-right: 44px; }
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            line-height: 1;
+        }
+        .password-toggle:hover { color: #111827; }
+    </style>
 </head>
 
 <body>
@@ -75,13 +93,18 @@
 
                                 <div class="form-group">
                                     <label>Password</label>
-                                    <input type="password" name="password" class="my-form-control"
-                                        placeholder="Enter Your Password" required>
+                                    <div class="password-wrap">
+                                        <input id="loginPassword" type="password" name="password" class="my-form-control"
+                                            placeholder="Enter Your Password" required>
+                                        <button type="button" class="password-toggle" data-target="loginPassword" aria-label="Show password">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <p class="f-pass">
                                     Forgot your password?
-                                    <a href="#">recover password</a>
+                                    <a href="{{ route('password.request') }}">recover password</a>
                                 </p>
 
                                 <div class="text-center">
@@ -118,6 +141,23 @@
 
     <script src="{{ asset('assets/js/vendor/jquery-3.6.0.min.js') }}"></script>
     <script src="{{ asset('assets/js/vendor/bootstrap.bundle.min.js') }}"></script>
+    <script>
+        document.querySelectorAll('.password-toggle').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (!input) return;
+
+                const icon = btn.querySelector('i');
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+                if (icon) {
+                    icon.className = isPassword ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+                }
+                btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+            });
+        });
+    </script>
 
 </body>
 

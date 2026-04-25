@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminNotification;
+use App\Models\SubscriptionPlan;
+use App\Models\UserSubscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -12,47 +15,48 @@ use Stripe\Exception\SignatureVerificationException;
 
 class PremiumController extends Controller
 {
-    // ── Plans config ─────────────────────────────────────────
-    // Once you have Stripe, replace the price_xxx values with
-    // your actual Stripe Price IDs from your Stripe dashboard.
-    // For now the amounts/months are defined here for reference.
-    private array $plans = [
-        'monthly' => [
-            'label'       => '1 Month',
-            'amount'      => 400,   // in cents = $4.00
-            'months'      => 1,
-            'stripe_price'=> 'price_monthly_placeholder',  // ← replace with real Stripe Price ID
-        ],
-        'quarterly' => [
-            'label'       => '3 Months',
-            'amount'      => 600,   // in cents = $6.00
-            'months'      => 3,
-            'stripe_price'=> 'price_quarterly_placeholder', // ← replace with real Stripe Price ID
-        ],
-        'biannual' => [
-            'label'       => '6 Months',
-            'amount'      => 800,   // in cents = $8.00
-            'months'      => 6,
-            'stripe_price'=> 'price_biannual_placeholder',  // ← replace with real Stripe Price ID
-        ],
-    ];
-
-    // ── Show plans page ───────────────────────────────────────
+    // ── Show plans page — from DB ──
     public function index()
     {
-        return view('user.premium.plans');
+        $activePlans = SubscriptionPlan::active()->orderBy('sort_order')->get();
+
+        // User-side simplified pricing: only Free + one paid Premium plan.
+        $freePlan = $activePlans->firstWhere('price', 0)
+            ?? $activePlans->firstWhere('slug', 'free');
+
+        $premiumPlan = $activePlans
+            ->filter(fn($p) => (float) $p->price > 0)
+            ->sortByDesc(fn($p) => $p->is_featured ? 1 : 0)
+            ->sortBy('sort_order')
+            ->firstWhere('slug', 'premium');
+
+        if (!$premiumPlan) {
+            $premiumPlan = $activePlans
+                ->filter(fn($p) => (float) $p->price > 0)
+                ->sortByDesc(fn($p) => $p->is_featured ? 1 : 0)
+                ->sortBy('sort_order')
+                ->first();
+        }
+
+        $plans = collect([$freePlan, $premiumPlan])->filter()->values();
+        return view('user.premium.plans', compact('plans'));
     }
 
-    // ── Create Stripe Checkout Session ───────────────────────
+    // ── Create Stripe Checkout Session ──
     public function checkout(Request $request)
     {
         $request->validate([
-            'plan' => 'required|in:monthly,quarterly,biannual',
+            'plan_id' => 'required|exists:subscription_plans,id',
         ]);
 
-        $plan = $this->plans[$request->plan];
+        $plan = SubscriptionPlan::findOrFail($request->plan_id);
 
-        // Set Stripe secret key
+        // Free plan — no payment needed
+        if ($plan->price == 0) {
+            return redirect()->route('user.discover')
+                ->with('success', 'You are on the Free plan!');
+        }
+
         Stripe::setApiKey(config('services.stripe.secret'));
 
         try {
@@ -61,21 +65,23 @@ class PremiumController extends Controller
                 'line_items' => [[
                     'price_data' => [
                         'currency'     => 'usd',
-                        'unit_amount'  => $plan['amount'],
+                        'unit_amount'  => (int)($plan->price * 100), // convert to cents
                         'product_data' => [
-                            'name'        => 'Fobia Premium — ' . $plan['label'],
-                            'description' => 'Unlock all countries, advanced filters & 10 chats/month',
+                            'name'        => 'Fobia ' . $plan->name . ' Plan',
+                            'description' => $plan->description ?? 'Unlock premium features',
                         ],
                     ],
                     'quantity' => 1,
                 ]],
-                'mode'        => 'payment',
-                'metadata'    => [
-                    'user_id' => Auth::id(),
-                    'plan'    => $request->plan,
-                    'months'  => $plan['months'],
+                'mode'     => 'payment',
+                'metadata' => [
+                    'user_id'  => Auth::id(),
+                    'plan_id'  => $plan->id,
+                    'plan_slug'=> $plan->slug,
+                    'days'     => $plan->duration_days,
+                    'amount'   => $plan->price,
                 ],
-                'success_url' => route('user.premium.success') . '?session_id={CHECKOUT_SESSION_ID}&plan=' . $request->plan,
+                'success_url' => route('user.premium.success') . '?session_id={CHECKOUT_SESSION_ID}&plan_id=' . $plan->id,
                 'cancel_url'  => route('user.premium.plans'),
             ]);
 
@@ -85,48 +91,47 @@ class PremiumController extends Controller
             return redirect()->route('user.premium.plans')
                 ->with('error', 'Payment could not be initiated. Please try again.');
         }
-        
     }
 
-    // ── Success page (after Stripe redirects back) ────────────
+    // ── Success page ──
     public function success(Request $request)
     {
-        $plan      = $request->query('plan', 'monthly');
+        $planId    = $request->query('plan_id');
         $sessionId = $request->query('session_id');
-        $planData  = $this->plans[$plan] ?? $this->plans['monthly'];
+        $plan      = SubscriptionPlan::find($planId);
 
-        // If we have a real session ID, verify with Stripe and activate premium
+        if (!$plan) {
+            return redirect()->route('user.premium.plans');
+        }
+
+        // Verify with Stripe and activate
         if ($sessionId && str_starts_with($sessionId, 'cs_')) {
             try {
                 Stripe::setApiKey(config('services.stripe.secret'));
                 $session = StripeSession::retrieve($sessionId);
 
                 if ($session->payment_status === 'paid') {
-                    $this->activatePremium(Auth::user(), $planData['months']);
+                    $this->activatePremium(Auth::user(), $plan, $sessionId);
                 }
             } catch (\Exception $e) {
-                // Log silently — don't show error on success page
                 \Log::error('Stripe success verification failed: ' . $e->getMessage());
             }
         }
 
-        $expiresAt = Carbon::now()->addMonths($planData['months']);
-
         return view('user.premium.success', [
             'plan'      => $plan,
-            'planData'  => $planData,
-            'expiresAt' => $expiresAt,
+            'expiresAt' => Carbon::now()->addDays($plan->duration_days),
         ]);
     }
 
-    // ── Cancel (user cancelled on Stripe page) ────────────────
+    // ── Cancel ──
     public function cancel()
     {
         return redirect()->route('user.premium.plans')
             ->with('error', 'Payment was cancelled. You can try again anytime.');
     }
 
-    // ── Stripe Webhook (for reliable payment confirmation) ────
+    // ── Stripe Webhook ──
     public function webhook(Request $request)
     {
         $payload   = $request->getContent();
@@ -142,17 +147,19 @@ class PremiumController extends Controller
             return response('Webhook signature verification failed.', 400);
         }
 
-        // Handle successful payment
         if ($event->type === 'checkout.session.completed') {
             $session = $event->data->object;
 
             if ($session->payment_status === 'paid') {
-                $userId = $session->metadata->user_id;
-                $months = (int) $session->metadata->months;
+                $userId  = $session->metadata->user_id;
+                $planId  = $session->metadata->plan_id;
+                $amount  = $session->metadata->amount;
 
                 $user = \App\Models\User::find($userId);
-                if ($user) {
-                    $this->activatePremium($user, $months);
+                $plan = SubscriptionPlan::find($planId);
+
+                if ($user && $plan) {
+                    $this->activatePremium($user, $plan, $session->id, $amount);
                 }
             }
         }
@@ -160,17 +167,53 @@ class PremiumController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
-    // ── Helper: activate premium on user ─────────────────────
-    private function activatePremium(\App\Models\User $user, int $months): void
-    {
-        // If already premium, extend from current expiry; otherwise from now
-        $base = ($user->is_premium && $user->premium_expires_at?->isFuture())
-            ? $user->premium_expires_at
-            : Carbon::now();
-
-        $user->update([
-            'is_premium'          => true,
-            'premium_expires_at'  => $base->addMonths($months),
-        ]);
-    }
+    // ── Helper: activate premium ──
+    private function activatePremium(
+    \App\Models\User $user,
+    \App\Models\SubscriptionPlan $plan,
+    string $sessionId = null,
+    float $amountPaid = null
+): void {
+    $base = ($user->is_premium && $user->premium_expires_at?->isFuture())
+        ? $user->premium_expires_at
+        : Carbon::now();
+ 
+    $expiresAt = $plan->duration_days > 0
+        ? $base->addDays($plan->duration_days)
+        : null;
+ 
+    // ── Update user ──
+    $user->update([
+        'is_premium'         => true,
+        'premium_expires_at' => $expiresAt,
+    ]);
+ 
+    // ── Save to user_subscriptions ──
+    \App\Models\UserSubscription::create([
+        'user_id'           => $user->id,
+        'plan_id'           => $plan->id,
+        'amount_paid'       => $amountPaid ?? $plan->price,
+        'payment_method'    => 'stripe',
+        'stripe_session_id' => $sessionId,
+        'status'            => 'active',
+        'starts_at'         => now(),
+        'expires_at'        => $expiresAt,
+    ]);
+ 
+    // ── Save to payments table ──
+    \App\Models\Payment::create([
+        'user_id'           => $user->id,
+        'plan_id'           => $plan->id,
+        'transaction_id'    => $sessionId,
+        'amount'            => $amountPaid ?? $plan->price,
+        'currency'          => 'USD',
+        'payment_method'    => 'stripe',
+        'status'            => 'paid',
+        'stripe_session_id' => $sessionId,
+        'paid_at'           => now(),
+    ]);
+ 
+    // ── Admin notification ──
+    \App\Models\AdminNotification::newSubscription($user, $plan->name);
+}
 }

@@ -1,14 +1,15 @@
 @extends('layouts.user')
 
 @section('usercontent')
-
+<div class="page-content-wrapper">
+    <div class="page-content">
 <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
     <div class="breadcrumb-title pe-3">Safety</div>
     <div class="ps-3">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0 p-0">
                 <li class="breadcrumb-item">
-                    <a href="{{ route('user.dashboard') }}"><ion-icon name="home-outline"></ion-icon></a>
+                    <a href="{{ route('user.discover') }}"><ion-icon name="home-outline"></ion-icon></a>
                 </li>
                 <li class="breadcrumb-item active">Blocked Users</li>
             </ol>
@@ -92,6 +93,8 @@
         </div>
 
     </div>
+</div>
+</div>
 </div>
 
 <style>

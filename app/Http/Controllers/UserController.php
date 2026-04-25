@@ -11,17 +11,8 @@ class UserController extends Controller
 {
     public function dashboard()
     {
-        $totalRevenue    = 0;
-        $totalCustomers  = \App\Models\User::count();
-        $totalOrders     = 0;
-        $conversionRate  = 0;
-
-        return view('user.dashboard', compact(
-            'totalRevenue',
-            'totalCustomers',
-            'totalOrders',
-            'conversionRate'
-        ));
+        // Dashboard has been removed from user side.
+        return redirect()->route('user.discover');
     }
 
     public function logout(Request $request)

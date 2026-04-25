@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Like;
 use App\Models\MatchRequest;
 use App\Models\Message;
 use App\Models\ProfileView;
@@ -16,20 +17,20 @@ class ActivityController extends Controller
         $userId = Auth::id();
 
         // ── Likes ──
-        $likesReceived = MatchRequest::with('sender')
-            ->where('receiver_id', $userId)
+        $likesReceived = Like::with('liker')
+            ->where('liked_id', $userId) // others liked me
             ->latest()
             ->take(10)
             ->get();
 
-        $likesGiven = MatchRequest::with('receiver')
-            ->where('sender_id', $userId)
+        $likesGiven = Like::with('liked')
+            ->where('liker_id', $userId) // I liked others
             ->latest()
             ->take(10)
             ->get();
 
-        $totalLikesReceived = MatchRequest::where('receiver_id', $userId)->count();
-        $totalLikesGiven    = MatchRequest::where('sender_id', $userId)->count();
+        $totalLikesReceived = Like::where('liked_id', $userId)->count();
+        $totalLikesGiven    = Like::where('liker_id', $userId)->count();
 
         // ── Matches ──
         $matches = MatchRequest::with(['sender', 'receiver'])

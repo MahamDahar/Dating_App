@@ -16,6 +16,24 @@
     <link rel="stylesheet" href="assets/css/swiper.min.css">
     <link rel="stylesheet" href="assets/css/lightcase.css">
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .password-wrap { position: relative; }
+        .password-wrap .my-form-control { padding-right: 44px; }
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            line-height: 1;
+        }
+        .password-toggle:hover { color: #111827; }
+    </style>
 
 </head>
 
@@ -89,21 +107,27 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Password*</label>
-                                    <input type="password" name="password" class="my-form-control" placeholder="Enter Your Password">
+                                    <div class="password-wrap">
+                                        <input id="registerPassword" type="password" name="password" class="my-form-control" placeholder="Enter Your Password">
+                                        <button type="button" class="password-toggle" data-target="registerPassword" aria-label="Show password">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="form-group">
                                     <label>Confirm Password*</label>
-                                    <input type="password" name="password_confirmation" class="my-form-control" placeholder="Confirm Your Password">
+                                    <div class="password-wrap">
+                                        <input id="registerConfirmPassword" type="password" name="password_confirmation" class="my-form-control" placeholder="Confirm Your Password">
+                                        <button type="button" class="password-toggle" data-target="registerConfirmPassword" aria-label="Show password">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <h4 class="content-title mt-5">Profile Details</h4>
                                 <div class="form-group">
                                     <label>Name*</label>
                                     <input type="text" name="name" class="my-form-control" placeholder="Enter Your Full Name" value="{{ old('name') }}">
-                                </div>
-                                <div class="form-group">
-                                    <label>Birthday*</label>
-                                    <input type="date" name="birthday" class="my-form-control" value="{{ old('birthday') }}">
                                 </div>
                                 <div class="form-group">
                                     <label>I am a*</label>
@@ -137,12 +161,20 @@
                                         <select name="marital_status" class="my-form-control">
                                             <option value="Single" {{ old('marital_status') == 'Single' ? 'selected' : '' }}>Single</option>
                                             <option value="Married" {{ old('marital_status') == 'Married' ? 'selected' : '' }}>Married</option>
+                                            <option value="Divorced" {{ old('marital_status') == 'Divorced' ? 'selected' : '' }}>Divorced</option>
+                                            <option value="Widowed" {{ old('marital_status') == 'Widowed' ? 'selected' : '' }}>Widowed</option>
+                                            <option value="Separated" {{ old('marital_status') == 'Separated' ? 'selected' : '' }}>Separated</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label>City*</label>
-                                    <input type="text" name="city" class="my-form-control" placeholder="Enter Your City" value="{{ old('city') }}">
+                                    <label>Country*</label>
+                                    <select name="country" class="my-form-control" required>
+                                        <option value="" disabled {{ old('country') ? '' : 'selected' }}>Select your country</option>
+                                        @foreach (\App\Support\CountryCities::countries() as $c)
+                                            <option value="{{ $c }}" {{ old('country') === $c ? 'selected' : '' }}>{{ $c }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
 
                                 <button type="submit" class="default-btn reverse"><span>Create Your Profile</span></button>
@@ -169,5 +201,22 @@
     <script src="assets/js/vendor/bootstrap.bundle.min.js"></script>
     <script src="assets/js/plugins.js"></script>
     <script src="assets/js/main.js"></script>
+    <script>
+        document.querySelectorAll('.password-toggle').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (!input) return;
+
+                const icon = btn.querySelector('i');
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+                if (icon) {
+                    icon.className = isPassword ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+                }
+                btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+            });
+        });
+    </script>
 </body>
 </html>

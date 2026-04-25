@@ -4,10 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class UserBlock extends Model
+class BlockedUser extends Model
 {
     protected $table    = 'user_blocks';
-    protected $fillable = ['blocker_id', 'blocked_id'];
+    protected $fillable = ['blocker_id', 'blocked_id', 'reason'];
 
     public function blocker()
     {

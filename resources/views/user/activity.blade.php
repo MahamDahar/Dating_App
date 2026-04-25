@@ -9,7 +9,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0 p-0">
                 <li class="breadcrumb-item">
-                    <a href="{{ route('user.dashboard') }}"><ion-icon name="home-outline"></ion-icon></a>
+                    <a href="{{ route('user.discover') }}"><ion-icon name="home-outline"></ion-icon></a>
                 </li>
                 <li class="breadcrumb-item active">My Activity</li>
             </ol>
@@ -95,10 +95,10 @@
                 <div id="likes-received" class="tab-content-area">
                     @forelse($likesReceived as $like)
                     <div class="activity-row">
-                        <img src="{{ $like->sender->avatar ?? asset('admin/assets/images/avatars/06.png') }}"
+                        <img src="{{ $like->liker->avatar ?? asset('admin/assets/images/avatars/06.png') }}"
                             class="activity-avatar" alt="">
                         <div class="flex-grow-1">
-                            <div class="activity-name">{{ $like->sender->name ?? 'Unknown' }}</div>
+                            <div class="activity-name">{{ $like->liker->name ?? 'Unknown' }}</div>
                             <div class="activity-time">{{ $like->created_at->diffForHumans() }}</div>
                         </div>
                         <span class="badge-pill" style="background:#fdf4ff;color:#7c3aed;">
@@ -117,10 +117,10 @@
                 <div id="likes-given" class="tab-content-area" style="display:none;">
                     @forelse($likesGiven as $like)
                     <div class="activity-row">
-                        <img src="{{ $like->receiver->avatar ?? asset('admin/assets/images/avatars/06.png') }}"
+                        <img src="{{ $like->liked->avatar ?? asset('admin/assets/images/avatars/06.png') }}"
                             class="activity-avatar" alt="">
                         <div class="flex-grow-1">
-                            <div class="activity-name">{{ $like->receiver->name ?? 'Unknown' }}</div>
+                            <div class="activity-name">{{ $like->liked->name ?? 'Unknown' }}</div>
                             <div class="activity-time">{{ $like->created_at->diffForHumans() }}</div>
                         </div>
                         <span class="badge-pill" style="background:#f0fdf4;color:#16a34a;">

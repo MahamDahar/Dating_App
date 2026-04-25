@@ -1,6 +1,7 @@
 @extends('layouts.user')
 @section('usercontent')
-
+<div class="page-content-wrapper">
+    <div class="page-content">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -179,6 +180,7 @@ textarea.finput{ resize:vertical; min-height:100px; }
 .pv-photo-item{ flex-shrink:0; width:90px; height:120px; border-radius:12px; overflow:hidden; border:3px solid var(--white); box-shadow:0 4px 12px rgba(0,0,0,.15); background:var(--border); cursor:pointer; position:relative; }
 .pv-photo-item.main-photo{ width:100px; height:133px; margin-top:-6px; }
 .pv-photo-item img{ width:100%; height:100%; object-fit:cover; }
+.pv-photo-item img.blurred-photo{ filter:blur(8px); transform:scale(1.03); }
 .pv-photo-item .main-pip{ position:absolute; bottom:6px; left:50%; transform:translateX(-50%); background:var(--accent); color:white; font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; white-space:nowrap; }
 .pv-photo-placeholder{ width:90px; height:120px; border-radius:12px; border:2px dashed var(--border); background:var(--soft); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer; color:var(--muted); font-size:11px; gap:4px; text-decoration:none; }
 
@@ -264,11 +266,15 @@ textarea.finput{ resize:vertical; min-height:100px; }
 .peg-slot:hover{ border-color:var(--ink); }
 .peg-slot.filled{ border-style:solid; border-color:transparent; }
 .peg-slot img{ width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+.peg-slot img.blurred-photo{ filter:blur(8px); transform:scale(1.03); }
 .peg-slot .peg-main{ position:absolute; top:6px; left:6px; background:var(--accent); color:white; font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; }
+.peg-slot .peg-blur-badge{ position:absolute; top:6px; left:58px; background:rgba(0,0,0,.65); color:white; font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; }
 .peg-slot .peg-del{ position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,.55); color:white; border:none; font-size:11px; cursor:pointer; display:none; align-items:center; justify-content:center; }
 .peg-slot:hover .peg-del{ display:flex; }
 .peg-slot .peg-set-main{ position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,.55); color:white; border:none; font-size:11px; font-weight:600; padding:5px; cursor:pointer; display:none; font-family:'DM Sans',sans-serif; }
 .peg-slot:hover .peg-set-main{ display:block; }
+.peg-slot .peg-toggle-blur{ position:absolute; bottom:28px; left:0; right:0; background:rgba(0,0,0,.58); color:white; border:none; font-size:11px; font-weight:600; padding:5px; cursor:pointer; display:none; font-family:'DM Sans',sans-serif; }
+.peg-slot:hover .peg-toggle-blur{ display:block; }
 .peg-slot .peg-plus{ font-size:24px; color:var(--muted); margin-bottom:4px; }
 .peg-slot .peg-lbl{ font-size:11px; color:var(--muted); }
 
@@ -346,16 +352,26 @@ textarea.finput{ resize:vertical; min-height:100px; }
             <div id="agePreview" style="margin-top:14px;font-size:14px;color:var(--muted);"></div>
         </div>
 
-        {{-- STEP 3: City / Country --}}
+        {{-- STEP 3: City (country fixed at registration) --}}
+        @php
+            $regCountry = (string) (auth()->user()->country ?? '');
+            $cityListSignup = \App\Support\CountryCities::citiesFor($regCountry);
+        @endphp
         <div class="form-slide" data-step="3">
             <h2 class="slide-title2">Where are you based? 🌍</h2>
-            <p class="slide-sub2">This helps show you to nearby profiles.</p>
-            <input type="text" class="finput" name="city" placeholder="City  e.g. Karachi, London..." style="margin-bottom:10px">
-            <input type="text" class="finput" name="country" id="countryInput" placeholder="Country  e.g. Pakistan, UK...">
-            <div class="chips">
-                @foreach(['Pakistan','United Kingdom','USA','Canada','UAE','Saudi Arabia','India','Bangladesh','Malaysia','Australia','Turkey','Germany'] as $c)
-                    <span class="fchip" data-target="countryInput">{{ $c }}</span>
-                @endforeach
+            <p class="slide-sub2">Your country is the one you chose at sign up. Pick your city from the list.</p>
+            <div style="margin-bottom:14px">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px">Country</div>
+                <div class="finput" style="background:#f0efec;color:var(--muted);cursor:not-allowed;border-style:dashed;margin-bottom:0" aria-readonly="true">{{ $regCountry !== '' ? $regCountry : '—' }}</div>
+            </div>
+            <div>
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px">City</div>
+                <select name="city" id="profileCitySelect" class="finput" required>
+                    <option value="" disabled {{ old('city') ? '' : 'selected' }}>Select your city</option>
+                    @foreach($cityListSignup as $cityName)
+                        <option value="{{ $cityName }}" {{ old('city') === $cityName ? 'selected' : '' }}>{{ $cityName }}</option>
+                    @endforeach
+                </select>
             </div>
         </div>
 
@@ -489,6 +505,13 @@ textarea.finput{ resize:vertical; min-height:100px; }
                 @endforeach
             </div>
             <input type="hidden" name="smoking" id="smokeH">
+            <p style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px">Drinking</p>
+            <div class="pill-group2" id="drinkGrp" style="margin-bottom:8px">
+                @foreach(['Never','Occasionally','Yes, regularly','Prefer not to say'] as $d)
+                    <span class="pill2" data-val="{{ $d }}">{{ $d }}</span>
+                @endforeach
+            </div>
+            <input type="hidden" name="drinking" id="drinkH">
         </div>
 
         {{-- STEP 14: Languages --}}
@@ -599,8 +622,9 @@ textarea.finput{ resize:vertical; min-height:100px; }
         <div class="pv-photo-strip">
             @forelse($photos as $photo)
                 <div class="pv-photo-item {{ $photo->is_main ? 'main-photo' : '' }}">
-                    <img src="{{ asset('storage/'.$photo->path) }}" alt="Photo">
+                    <img src="{{ asset('storage/'.$photo->path) }}" alt="Photo" class="{{ $photo->is_blurred ? 'blurred-photo' : '' }}">
                     @if($photo->is_main)<div class="main-pip">⭐ Main</div>@endif
+                    @if($photo->is_blurred)<div class="peg-blur-badge">Blurred</div>@endif
                 </div>
             @empty
                 <a href="{{ route('user.profile') }}?edit=1" class="pv-photo-placeholder">
@@ -647,6 +671,19 @@ textarea.finput{ resize:vertical; min-height:100px; }
                     <div class="pv-comp-fill" style="width:{{ $profile->profile_completion }}%"></div>
                 </div>
             </div>
+
+            @if((int) $profile->profile_completion >= 100)
+                <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <a href="{{ route('user.verification.index') }}" class="btn btn-dark btn-sm px-3">
+                        Verify Photo
+                    </a>
+                    @if(Auth::user()->photo_verified)
+                        <span class="tag2 tag-green">Photo Verified</span>
+                    @else
+                        <span class="tag2 tag-soft">Not Verified Yet</span>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 
@@ -706,13 +743,19 @@ textarea.finput{ resize:vertical; min-height:100px; }
     </div>
 
     {{-- Lifestyle --}}
-    @if($profile->smoking || $profile->want_children || $profile->languages)
+    @if($profile->smoking || $profile->drinking || $profile->want_children || $profile->languages)
     <div class="pv-section">
         <div class="pv-sec-head"><ion-icon name="leaf-outline"></ion-icon> Lifestyle</div>
         @if($profile->smoking)
         <div class="pv-row">
             <div class="pv-row-icon">🚬</div>
             <div><div class="pv-row-key">Smoking</div><div class="pv-row-val">{{ $profile->smoking }}</div></div>
+        </div>
+        @endif
+        @if($profile->drinking)
+        <div class="pv-row">
+            <div class="pv-row-icon">🍷</div>
+            <div><div class="pv-row-key">Drinking</div><div class="pv-row-val">{{ $profile->drinking }}</div></div>
         </div>
         @endif
         @if($profile->want_children)
@@ -817,6 +860,35 @@ textarea.finput{ resize:vertical; min-height:100px; }
 
 <div class="edit-page">
 <div class="edit-wrap">
+    @php
+        $f = fn ($key, $fallback = null) => old($key, data_get($profile, $key, $fallback));
+        $sv = function ($key, $fallback = null) use ($f) {
+            $value = $f($key, $fallback);
+            return is_string($value) ? trim($value) : $value;
+        };
+        $eq = function ($a, $b) {
+            if ($a === null || $b === null) return false;
+            return strcasecmp(trim((string) $a), trim((string) $b)) === 0;
+        };
+        $maritalForEdit = $sv('marital_status');
+        if ($eq($maritalForEdit, 'Single')) {
+            $maritalForEdit = 'Never Married';
+        } elseif ($eq($maritalForEdit, 'Married')) {
+            $maritalForEdit = 'Married (polygamy)';
+        }
+        $dobForInput = $f('date_of_birth');
+        if ($dobForInput instanceof \Carbon\CarbonInterface) {
+            $dobForInput = $dobForInput->format('Y-m-d');
+        } elseif (!empty($dobForInput)) {
+            try {
+                $dobForInput = \Carbon\Carbon::parse($dobForInput)->format('Y-m-d');
+            } catch (\Throwable $e) {
+                $dobForInput = '';
+            }
+        }
+        $regCountryEdit = (string) (auth()->user()->country ?? '');
+        $cityListEdit = \App\Support\CountryCities::citiesFor($regCountryEdit);
+    @endphp
 
     <div class="edit-page-title">✏️ Edit Profile</div>
     <div class="edit-page-sub">Update your info to get better matches.</div>
@@ -827,12 +899,21 @@ textarea.finput{ resize:vertical; min-height:100px; }
     {{-- Photos --}}
     <div class="edit-card2">
         <div class="ec-head">📸 Photos</div>
+        @if(!Auth::user()->isPremium())
+            <div style="padding:10px 20px;border-bottom:1px solid #faf9f8;font-size:12px;color:#6b7280">
+                Blur photos is a premium feature. Upgrade to unlock.
+            </div>
+        @endif
         <div class="photo-edit-grid" id="pegGrid">
             @foreach($photos as $photo)
             <div class="peg-slot filled" data-id="{{ $photo->id }}">
-                <img src="{{ asset('storage/'.$photo->path) }}">
+                <img src="{{ asset('storage/'.$photo->path) }}" class="{{ $photo->is_blurred ? 'blurred-photo' : '' }}">
                 @if($photo->is_main)<div class="peg-main">⭐ Main</div>@endif
+                @if($photo->is_blurred)<div class="peg-blur-badge">Blurred</div>@endif
                 <button type="button" class="peg-del" onclick="delPhoto({{ $photo->id }},this)">✕</button>
+                <button type="button" class="peg-toggle-blur" onclick="toggleBlur({{ $photo->id }}, {{ $photo->is_blurred ? 'true' : 'false' }})">
+                    {{ $photo->is_blurred ? 'Unblur photo' : 'Blur photo' }}
+                </button>
                 @if(!$photo->is_main)
                 <button type="button" class="peg-set-main" onclick="setMain({{ $photo->id }},this)">Set as main</button>
                 @endif
@@ -856,7 +937,7 @@ textarea.finput{ resize:vertical; min-height:100px; }
             <select name="sect">
                 <option value="">-- Select --</option>
                 @foreach(['Sunni','Shia','Ahmadi','Nation of Islam','Ibadi','Just Muslim','Prefer not to say'] as $s)
-                    <option value="{{ $s }}" @selected($profile->sect==$s)>{{ $s }}</option>
+                    <option value="{{ $s }}" @selected($eq($sv('sect'), $s))>{{ $s }}</option>
                 @endforeach
             </select>
         </div>
@@ -864,7 +945,7 @@ textarea.finput{ resize:vertical; min-height:100px; }
             <select name="religion_practice">
                 <option value="">-- Select --</option>
                 @foreach(['Practising','Moderately Practising','Not Practising','Revert / New Muslim'] as $r)
-                    <option value="{{ $r }}" @selected($profile->religion_practice==$r)>{{ $r }}</option>
+                    <option value="{{ $r }}" @selected($eq($sv('religion_practice'), $r))>{{ $r }}</option>
                 @endforeach
             </select>
         </div>
@@ -872,7 +953,7 @@ textarea.finput{ resize:vertical; min-height:100px; }
             <select name="born_muslim">
                 <option value="">-- Select --</option>
                 @foreach(['Yes'=>'Yes, born Muslim','No'=>'No, I reverted','Prefer not to say'=>'Prefer not to say'] as $v=>$l)
-                    <option value="{{ $v }}" @selected($profile->born_muslim==$v)>{{ $l }}</option>
+                    <option value="{{ $v }}" @selected($eq($sv('born_muslim'), $v))>{{ $l }}</option>
                 @endforeach
             </select>
         </div>
@@ -882,31 +963,36 @@ textarea.finput{ resize:vertical; min-height:100px; }
     <div class="edit-card2">
         <div class="ec-head">👤 Personal Info</div>
         <div class="ec-row"><span class="ec-lbl">Date of Birth</span>
-            <input type="date" name="date_of_birth" value="{{ old('date_of_birth',$profile->date_of_birth) }}">
-        </div>
-        <div class="ec-row"><span class="ec-lbl">City</span>
-            <input type="text" name="city" value="{{ old('city',$profile->city) }}" placeholder="e.g. Karachi">
+            <input type="date" name="date_of_birth" value="{{ $dobForInput }}">
         </div>
         <div class="ec-row"><span class="ec-lbl">Country</span>
-            <input type="text" name="country" value="{{ old('country',$profile->country) }}" placeholder="e.g. Pakistan">
+            <input type="text" class="finput" value="{{ $regCountryEdit !== '' ? $regCountryEdit : '—' }}" readonly style="background:#f0efec;color:var(--muted);cursor:not-allowed;border-style:dashed">
+        </div>
+        <div class="ec-row"><span class="ec-lbl">City</span>
+            <select name="city" class="finput" required>
+                <option value="">-- Select city --</option>
+                @foreach($cityListEdit as $cityName)
+                    <option value="{{ $cityName }}" @selected($eq($sv('city'), $cityName))>{{ $cityName }}</option>
+                @endforeach
+            </select>
         </div>
         <div class="ec-row"><span class="ec-lbl">Nationality</span>
-            <input type="text" name="nationality" value="{{ old('nationality',$profile->nationality) }}">
+            <input type="text" name="nationality" value="{{ $f('nationality') }}">
         </div>
         <div class="ec-row"><span class="ec-lbl">Grew Up</span>
-            <input type="text" name="grew_up" value="{{ old('grew_up',$profile->grew_up) }}">
+            <input type="text" name="grew_up" value="{{ $f('grew_up') }}">
         </div>
         <div class="ec-row"><span class="ec-lbl">Ethnicity</span>
-            <input type="text" name="ethnicity" value="{{ old('ethnicity',$profile->ethnicity) }}" placeholder="Comma separated">
+            <input type="text" name="ethnicity" value="{{ $f('ethnicity') }}" placeholder="Comma separated">
         </div>
         <div class="ec-row"><span class="ec-lbl">Height (cm)</span>
-            <input type="number" name="height_cm" value="{{ old('height_cm',$profile->height_cm) }}" min="100" max="250">
+            <input type="number" name="height_cm" value="{{ $f('height_cm') }}" min="100" max="250">
         </div>
         <div class="ec-row"><span class="ec-lbl">Marital Status</span>
             <select name="marital_status">
                 <option value="">-- Select --</option>
                 @foreach(['Never Married','Divorced','Widowed','Separated','Married (polygamy)'] as $m)
-                    <option value="{{ $m }}" @selected($profile->marital_status==$m)>{{ $m }}</option>
+                    <option value="{{ $m }}" @selected($eq($maritalForEdit, $m))>{{ $m }}</option>
                 @endforeach
             </select>
         </div>
@@ -919,7 +1005,15 @@ textarea.finput{ resize:vertical; min-height:100px; }
             <select name="smoking">
                 <option value="">-- Select --</option>
                 @foreach(['Never','Occasionally','Yes, regularly','Prefer not to say'] as $s)
-                    <option value="{{ $s }}" @selected($profile->smoking==$s)>{{ $s }}</option>
+                    <option value="{{ $s }}" @selected($eq($sv('smoking'), $s))>{{ $s }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="ec-row"><span class="ec-lbl">Drinking</span>
+            <select name="drinking">
+                <option value="">-- Select --</option>
+                @foreach(['Never','Occasionally','Yes, regularly','Prefer not to say'] as $d)
+                    <option value="{{ $d }}" @selected($eq($sv('drinking'), $d))>{{ $d }}</option>
                 @endforeach
             </select>
         </div>
@@ -927,7 +1021,7 @@ textarea.finput{ resize:vertical; min-height:100px; }
             <select name="want_children">
                 <option value="">-- Select --</option>
                 @foreach(['Yes','No','Open to it','Have children already'] as $c)
-                    <option value="{{ $c }}" @selected($profile->want_children==$c)>{{ $c }}</option>
+                    <option value="{{ $c }}" @selected($eq($sv('want_children'), $c))>{{ $c }}</option>
                 @endforeach
             </select>
         </div>
@@ -935,12 +1029,12 @@ textarea.finput{ resize:vertical; min-height:100px; }
             <select name="num_children">
                 <option value="">-- Select --</option>
                 @foreach(['1','2','3','4+','Prefer not to say'] as $n)
-                    <option value="{{ $n }}" @selected($profile->num_children==$n)>{{ $n }}</option>
+                    <option value="{{ $n }}" @selected($eq($sv('num_children'), $n))>{{ $n }}</option>
                 @endforeach
             </select>
         </div>
         <div class="ec-row"><span class="ec-lbl">Languages</span>
-            <input type="text" name="languages" value="{{ old('languages',$profile->languages) }}" placeholder="e.g. English, Urdu, Arabic">
+            <input type="text" name="languages" value="{{ $f('languages') }}" placeholder="e.g. English, Urdu, Arabic">
         </div>
     </div>
 
@@ -948,13 +1042,13 @@ textarea.finput{ resize:vertical; min-height:100px; }
     <div class="edit-card2">
         <div class="ec-head">💼 Career & Education</div>
         <div class="ec-row"><span class="ec-lbl">Profession</span>
-            <input type="text" name="profession" value="{{ old('profession',$profile->profession) }}">
+            <input type="text" name="profession" value="{{ $f('profession') }}">
         </div>
         <div class="ec-row"><span class="ec-lbl">Education</span>
             <select name="education">
                 <option value="">-- Select --</option>
                 @foreach(['High School','Diploma / Vocational',"Bachelor's Degree","Master's Degree",'PhD / Doctorate','Islamic Education','Other'] as $e)
-                    <option value="{{ $e }}" @selected($profile->education==$e)>{{ $e }}</option>
+                    <option value="{{ $e }}" @selected($eq($sv('education'), $e))>{{ $e }}</option>
                 @endforeach
             </select>
         </div>
@@ -967,7 +1061,7 @@ textarea.finput{ resize:vertical; min-height:100px; }
             <select name="marriage_intentions">
                 <option value="">-- Select --</option>
                 @foreach(['Seriously looking','Open to options','Not sure yet','Within 1 year','Within 2-3 years'] as $i)
-                    <option value="{{ $i }}" @selected($profile->marriage_intentions==$i)>{{ $i }}</option>
+                    <option value="{{ $i }}" @selected($eq($sv('marriage_intentions'), $i))>{{ $i }}</option>
                 @endforeach
             </select>
         </div>
@@ -977,7 +1071,7 @@ textarea.finput{ resize:vertical; min-height:100px; }
     <div class="edit-card2">
         <div class="ec-head">📝 Bio</div>
         <div class="ec-textarea">
-            <textarea name="bio" id="bioEd" maxlength="300" placeholder="Tell potential matches about yourself...">{{ old('bio',$profile->bio) }}</textarea>
+            <textarea name="bio" id="bioEd" maxlength="300" placeholder="Tell potential matches about yourself...">{{ $f('bio') }}</textarea>
             <div style="text-align:right;font-size:12px;color:var(--muted);margin-top:4px"><span id="bioEdCnt">{{ strlen($profile->bio??'') }}</span>/300</div>
         </div>
     </div>
@@ -986,10 +1080,10 @@ textarea.finput{ resize:vertical; min-height:100px; }
     <div class="edit-card2">
         <div class="ec-head">⭐ Interests & Personality</div>
         <div class="ec-row"><span class="ec-lbl">Interests</span>
-            <input type="text" name="interests" value="{{ old('interests',$profile->interests) }}" placeholder="Comma separated">
+            <input type="text" name="interests" value="{{ $f('interests') }}" placeholder="Comma separated">
         </div>
         <div class="ec-row"><span class="ec-lbl">Personality</span>
-            <input type="text" name="personality" value="{{ old('personality',$profile->personality) }}" placeholder="e.g. Caring, Ambitious">
+            <input type="text" name="personality" value="{{ $f('personality') }}" placeholder="e.g. Caring, Ambitious">
         </div>
     </div>
 
@@ -998,11 +1092,11 @@ textarea.finput{ resize:vertical; min-height:100px; }
         <div class="ec-head">⚙️ Settings</div>
         <div class="ec-toggle">
             <div><div class="ec-toggle-lbl">🔔 Notifications</div><div class="ec-toggle-sub">Get notified about new matches</div></div>
-            <label class="sw"><input type="checkbox" name="notifications_enabled" value="1" {{ $profile->notifications_enabled ? 'checked' : '' }}><span class="sw-slider"></span></label>
+            <label class="sw"><input type="checkbox" name="notifications_enabled" value="1" {{ old('notifications_enabled', $profile->notifications_enabled) ? 'checked' : '' }}><span class="sw-slider"></span></label>
         </div>
         <div class="ec-toggle">
             <div><div class="ec-toggle-lbl">🔒 Hide from Contacts</div><div class="ec-toggle-sub">Your profile won't appear to contacts</div></div>
-            <label class="sw"><input type="checkbox" name="hide_from_contacts" value="1" {{ $profile->hide_from_contacts ? 'checked' : '' }}><span class="sw-slider"></span></label>
+            <label class="sw"><input type="checkbox" name="hide_from_contacts" value="1" {{ old('hide_from_contacts', $profile->hide_from_contacts) ? 'checked' : '' }}><span class="sw-slider"></span></label>
         </div>
     </div>
 
@@ -1012,6 +1106,8 @@ textarea.finput{ resize:vertical; min-height:100px; }
     </div>
 
     </form>
+</div>
+</div>
 </div>
 </div>
 
@@ -1044,7 +1140,7 @@ if(slides.length){
         if(SKIP.includes(i)) return true;
         const checks={
             1:()=>{ const d=document.getElementById('dobDay')?.value,m=document.getElementById('dobMonth')?.value,y=document.getElementById('dobYear')?.value; if(!d||!m||!y){toast('⚠️ Please select your date of birth');return false;} const age=new Date().getFullYear()-parseInt(y); if(age<18){toast('⚠️ You must be 18+');return false;} document.getElementById('dobFinal').value=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; return true; },
-            2:()=>{ const c=document.querySelector('[name="country"]'); if(!c?.value.trim()){toast('⚠️ Please enter your country');return false;} return true; },
+            2:()=>{ const c=document.getElementById('profileCitySelect'); if(!c?.value.trim()){toast('⚠️ Please select your city');return false;} return true; },
             3:()=>{ if(!document.getElementById('sectH').value){toast('⚠️ Please select your sect');return false;} return true; },
             4:()=>{ if(!document.querySelector('[name="profession"]')?.value.trim()){toast('⚠️ Please enter your profession');return false;} return true; },
             5:()=>{ if(!document.getElementById('eduH').value){toast('⚠️ Please select your education');return false;} return true; },
@@ -1053,7 +1149,11 @@ if(slides.length){
             9:()=>{ if(!document.getElementById('marH').value){toast('⚠️ Please select marital status');return false;} return true; },
             10:()=>{ if(!document.getElementById('intentH').value){toast('⚠️ Please select marriage intentions');return false;} return true; },
             11:()=>{ if(!document.getElementById('childH').value){toast('⚠️ Please select children preference');return false;} return true; },
-            12:()=>{ if(!document.getElementById('smokeH').value){toast('⚠️ Please select smoking preference');return false;} return true; },
+            12:()=>{
+                if(!document.getElementById('smokeH').value){toast('⚠️ Please select smoking preference');return false;}
+                if(!document.getElementById('drinkH').value){toast('⚠️ Please select drinking preference');return false;}
+                return true;
+            },
             13:()=>{ if(!selLang.length){toast('⚠️ Select at least one language');return false;} return true; },
             15:()=>{ if(!selInt.length){toast('⚠️ Select at least one interest');return false;} return true; },
         };
@@ -1071,7 +1171,7 @@ if(slides.length){
     function bindSingle(gId,hId){ document.querySelectorAll('#'+gId+' .pill2').forEach(p=>{ p.addEventListener('click',()=>{ document.querySelectorAll('#'+gId+' .pill2').forEach(x=>x.classList.remove('sel')); p.classList.add('sel'); document.getElementById(hId).value=p.dataset.val; }); }); }
     bindSingle('sectGrp','sectH'); bindSingle('eduGrp','eduH'); bindSingle('marGrp','marH');
     bindSingle('intentGrp','intentH'); bindSingle('childGrp','childH'); bindSingle('numChildGrp','numChildH');
-    bindSingle('smokeGrp','smokeH'); bindSingle('relGrp','relH');
+    bindSingle('smokeGrp','smokeH'); bindSingle('drinkGrp','drinkH'); bindSingle('relGrp','relH');
 
     document.querySelectorAll('#ethGrp .pill2').forEach(p=>{ p.addEventListener('click',()=>{ const v=p.dataset.val; if(p.classList.contains('sel')){p.classList.remove('sel');selEth=selEth.filter(x=>x!==v);}else{p.classList.add('sel');selEth.push(v);} document.getElementById('ethH').value=selEth.join(','); }); });
     document.querySelectorAll('#langGrp .pill2').forEach(p=>{ p.addEventListener('click',()=>{ const v=p.dataset.val; if(p.classList.contains('sel')){p.classList.remove('sel');selLang=selLang.filter(x=>x!==v);}else{p.classList.add('sel');selLang.push(v);} document.getElementById('langH').value=selLang.join(','); }); });
@@ -1102,9 +1202,95 @@ if(slides.length){
 const bioEd=document.getElementById('bioEd'),bioEdCnt=document.getElementById('bioEdCnt');
 if(bioEd){ bioEd.addEventListener('input',()=>{ bioEdCnt.textContent=bioEd.value.length; }); }
 
-async function uploadPhoto(input){ const file=input.files[0]; if(!file) return; const fd=new FormData(); fd.append('photo',file); const r=await fetch('{{ route("user.profile.photo.upload") }}',{method:'POST',headers:{'X-CSRF-TOKEN':CSRF},body:fd}); const d=await r.json(); if(d.error){toast('❌ '+d.error);return;} toast('✅ Photo uploaded!'); location.reload(); }
-async function delPhoto(id,btn){ if(!confirm('Delete this photo?')) return; const r=await fetch('{{ route("user.profile.photo.delete") }}',{method:'DELETE',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},body:JSON.stringify({photo_id:id})}); const d=await r.json(); if(d.success){toast('Photo deleted');location.reload();} }
-async function setMain(id,btn){ const r=await fetch('{{ route("user.profile.photo.main") }}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},body:JSON.stringify({photo_id:id})}); const d=await r.json(); if(d.success){toast('⭐ Main photo set!');location.reload();} }
+function parseJsonResponse(text){
+    try { return JSON.parse(text); } catch (e) { return null; }
+}
+function apiHeaders(json){
+    const h={'Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':CSRF||''};
+    if(json) h['Content-Type']='application/json';
+    return h;
+}
+async function uploadPhoto(input){
+    const file=input.files[0];
+    if(!file) return;
+    const fd=new FormData();
+    fd.append('photo',file);
+    if(CSRF) fd.append('_token', CSRF);
+    try{
+        const r=await fetch('/user/profile/photo/upload',{
+            method:'POST',
+            headers:apiHeaders(false),
+            body:fd,
+            credentials:'same-origin',
+        });
+        const text=await r.text();
+        const d=parseJsonResponse(text);
+        if(!d){
+            toast('❌ Upload failed — check console or try refreshing the page.');
+            console.error('Photo upload non-JSON response:', text.slice(0,400));
+            return;
+        }
+        if(d.errors){
+            const msg=Object.values(d.errors).flat().join(' ')||d.message||'Invalid file';
+            toast('❌ '+msg);
+            return;
+        }
+        if(!r.ok||d.error){ toast('❌ '+(d.error||d.message||'Upload failed')); return; }
+        toast('✅ Photo uploaded!');
+        location.reload();
+    }catch(e){
+        toast('❌ Network error');
+        console.error(e);
+    }finally{
+        input.value='';
+    }
+}
+async function delPhoto(id,btn){
+    if(!confirm('Delete this photo?')) return;
+    const r=await fetch('/user/profile/photo',{
+        method:'DELETE',
+        headers:apiHeaders(true),
+        body:JSON.stringify({photo_id:id}),
+        credentials:'same-origin',
+    });
+    const d=parseJsonResponse(await r.text())||{};
+    if(d.success){ toast('Photo deleted'); location.reload(); }
+    else{ toast('❌ '+(d.error||d.message||'Could not delete')); }
+}
+async function setMain(id,btn){
+    const r=await fetch('/user/profile/photo/main',{
+        method:'POST',
+        headers:apiHeaders(true),
+        body:JSON.stringify({photo_id:id}),
+        credentials:'same-origin',
+    });
+    const d=parseJsonResponse(await r.text())||{};
+    if(d.success){ toast('⭐ Main photo set!'); location.reload(); }
+    else{ toast('❌ '+(d.error||d.message||'Could not update')); }
+}
+async function toggleBlur(id,isBlurred){
+    const isPremium = {{ Auth::user()->isPremium() ? 'true' : 'false' }};
+    if(!isPremium){
+        if(confirm('Blur option is only for premium users.\nDo you want to upgrade now?')){
+            window.location.href='/user/premium/plans';
+        }
+        return;
+    }
+    const r=await fetch('/user/profile/photo/blur',{
+        method:'POST',
+        headers:apiHeaders(true),
+        body:JSON.stringify({photo_id:id}),
+        credentials:'same-origin',
+    });
+    const d=parseJsonResponse(await r.text())||{};
+    if(!r.ok){
+        toast('❌ '+(d.error||'Unable to update blur setting'));
+        if(d.upgrade_url){ window.location.href=d.upgrade_url.charAt(0)==='/'?d.upgrade_url:'/user/premium/plans'; }
+        return;
+    }
+    toast(d.is_blurred ? 'Photo blurred' : 'Photo unblurred');
+    location.reload();
+}
 </script>
 
 @endsection

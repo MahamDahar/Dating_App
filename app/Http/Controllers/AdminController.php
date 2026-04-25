@@ -9,6 +9,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -16,40 +17,43 @@ class AdminController extends Controller
     {
         $totalUsers = User::count();
 
-        // Total Subscribers — safely check column exists first
-        try {
-            $totalSubscribers = User::where('is_premium', true)->count();
-        } catch (\Exception $e) {
-            $totalSubscribers = 0;
-        }
+        try { $totalSubscribers = User::where('is_premium', true)->count(); }
+        catch (\Exception $e) { $totalSubscribers = 0; }
 
-        // Total Matches
-        try {
-            $totalMatches = MarriageMatch::count();
-        } catch (\Exception $e) {
-            $totalMatches = 0;
-        }
+        try { $totalMatches = MarriageMatch::count(); }
+        catch (\Exception $e) { $totalMatches = 0; }
 
-        // Total Revenue from premium users (simple estimate)
+        try { $totalRevenue = User::where('is_premium', true)->count() * 4; }
+        catch (\Exception $e) { $totalRevenue = 0; }
+
+        // Active Users Today
+        try { $activeUsersToday = User::where('role','user')->whereDate('updated_at', Carbon::today())->count(); }
+        catch (\Exception $e) { $activeUsersToday = 0; }
+
+        // New Signups Today
+        try { $newSignupsToday = User::where('role','user')->whereDate('created_at', Carbon::today())->count(); }
+        catch (\Exception $e) { $newSignupsToday = 0; }
+
+        // Gender Ratio
         try {
-            $totalRevenue = User::where('is_premium', true)->count() * 4;
-            // $4 per subscriber (monthly plan price) — adjust as needed
-        } catch (\Exception $e) {
-            $totalRevenue = 0;
-        }
+            $totalMen   = User::where('role','user')->where('gender','Man')->count();
+            $totalWomen = User::where('role','user')->where('gender','Woman')->count();
+        } catch (\Exception $e) { $totalMen = 0; $totalWomen = 0; }
+
+        // Verified Users
+        try { $verifiedUsers = User::where('role','user')->whereNotNull('email_verified_at')->count(); }
+        catch (\Exception $e) { $verifiedUsers = 0; }
 
         return view('admin.dashboard', compact(
-            'totalUsers',
-            'totalSubscribers',
-            'totalMatches',
-            'totalRevenue'
+            'totalUsers','totalSubscribers','totalMatches','totalRevenue',
+            'activeUsersToday','newSignupsToday',
+            'totalMen','totalWomen','verifiedUsers'
         ));
     }
 
     public function userList(Request $request)
     {
         $users = User::query();
-
         if ($request->filled('search')) {
             $search = $request->search;
             $users->where(function ($query) use ($search) {
@@ -59,50 +63,33 @@ class AdminController extends Controller
                       ->orWhere('city', 'like', "%$search%");
             });
         }
-
         $users = $users->paginate(5)->withQueryString();
-
         return view('admin.index', compact('users'));
     }
 
     public function destroy($id)
     {
-        $user = User::findOrFail($id);
-        $user->delete();
-
+        User::findOrFail($id)->delete();
         return redirect()->back()->with('success', 'User deleted successfully');
     }
 
-    // ── Login as any user ──
     public function loginAsUser($id)
     {
         $user = User::findOrFail($id);
-
         session(['admin_user_id' => Auth::id()]);
-
         Auth::login($user);
-
-        return redirect()->route('user.dashboard')
+        return redirect()->route('user.discover')
             ->with('success', 'Logged in as ' . $user->name . '. Click "Return to Admin" to go back.');
     }
 
-    // ── Return back to admin account ──
     public function returnToAdmin()
     {
         $adminId = session('admin_user_id');
-
-        if (!$adminId) {
-            return redirect()->route('admin.dashboard');
-        }
-
+        if (!$adminId) return redirect()->route('admin.dashboard');
         $admin = User::findOrFail($adminId);
-
         session()->forget('admin_user_id');
-
         Auth::login($admin);
-
-        return redirect()->route('admin.dashboard')
-            ->with('success', 'Welcome back, Admin!');
+        return redirect()->route('admin.dashboard')->with('success', 'Welcome back, Admin!');
     }
 
     public function logout(Request $request)
@@ -110,29 +97,22 @@ class AdminController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        return redirect()->route('frontend.index')
-                         ->with('success', 'Logged out successfully');
+        return redirect()->route('frontend.index')->with('success', 'Logged out successfully');
     }
 
     public function settings()
     {
-        $user = auth()->user();
-        return view('admin.settings', compact('user'));
+        return view('admin.settings', ['user' => auth()->user()]);
     }
 
-    // ADMIN APNI PROFILE EDIT KARNE KE LIYE
     public function editOwn()
     {
-        $user = auth()->user();
-        return view('admin.edit-profile', compact('user'));
+        return view('admin.edit-profile', ['user' => auth()->user()]);
     }
 
-    // ADMIN APNI PROFILE UPDATE KARNE KE LIYE
     public function updateOwn(Request $request)
     {
         $user = auth()->user();
-
         $request->validate([
             'username'       => 'required|string|max:255|unique:users,username,' . $user->id,
             'name'           => 'required|string|max:255',
@@ -145,44 +125,23 @@ class AdminController extends Controller
             'marital_status' => 'nullable|string',
             'city'           => 'nullable|string|max:255',
         ]);
-
-        $data = $request->only([
-            'username', 'name', 'email', 'role', 'birthday',
-            'gender', 'looking_for', 'marital_status', 'city'
-        ]);
-
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
-        }
-
+        $data = $request->only(['username','name','email','role','birthday','gender','looking_for','marital_status','city']);
+        if ($request->filled('password')) $data['password'] = Hash::make($request->password);
         $user->update($data);
-
         return redirect()->back()->with('success', 'Profile updated successfully!');
     }
 
-    // DUSRE USER KO EDIT KARNE KE LIYE
     public function edit($id)
     {
-        $user = User::findOrFail($id);
-        return view('admin.edit-user', compact('user'));
+        return view('admin.edit-user', ['user' => User::findOrFail($id)]);
     }
 
-    // DUSRE USER KO UPDATE KARNE KE LIYE
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-
-        $data = $request->only([
-            'username', 'name', 'email', 'role',
-            'birthday', 'gender', 'looking_for', 'marital_status', 'city'
-        ]);
-
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
-        }
-
+        $data = $request->only(['username','name','email','role','birthday','gender','looking_for','marital_status','city']);
+        if ($request->filled('password')) $data['password'] = Hash::make($request->password);
         $user->update($data);
-
         return redirect()->route('admin.users')->with('success', 'User updated successfully!');
     }
 }

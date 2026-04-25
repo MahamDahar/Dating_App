@@ -40,6 +40,8 @@
 .btn-gps .gps-icon{ font-size:19px;animation:gpsPulse 1.8s ease-in-out infinite; }
 @keyframes gpsPulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.2);} }
 .privacy-note{ margin-top:20px;font-size:11.5px;color:#b0b8c8;display:flex;align-items:center;justify-content:center;gap:5px; }
+.btn-gps-skip{ margin-top:16px;background:transparent;border:none;color:var(--muted);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:3px; padding:8px; }
+.btn-gps-skip:hover{ color:var(--dark); }
 
 /* PROFILES SCREEN */
 .profiles-screen{ display:none; }
@@ -48,7 +50,6 @@
 .gps-active-badge{ display:flex;align-items:center;gap:6px;background:#f0fdf4;color:#16a34a;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600; }
 .gps-dot{ width:7px;height:7px;border-radius:50%;background:#16a34a;animation:blink 1.5s ease-in-out infinite; }
 @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.3;} }
-
 .swipe-container{ display:flex;flex-direction:column;align-items:center;padding:28px 16px 120px; }
 .swipe-stack{ position:relative;width:100%;max-width:360px;height:560px;margin:0 auto; }
 
@@ -95,6 +96,14 @@
 .btn-match-close{ width:100%;background:rgba(255,255,255,.1);color:white;border:none;border-radius:14px;padding:12px;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif; }
 @keyframes bounceIn{ 0%{transform:scale(.5);} 70%{transform:scale(1.1);} 100%{transform:scale(1);} }
 @keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+
+/* Refresh rules popup */
+.refresh-popup{ position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:2200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px); }
+.refresh-popup.show{ display:flex;animation:fadeIn .25s ease; }
+.refresh-box{ width:100%;max-width:420px;background:linear-gradient(145deg,#ffffff,#f8f5ff);border:1px solid #ece7ff;border-radius:22px;padding:24px 22px;box-shadow:0 20px 48px rgba(0,0,0,.18);text-align:center; }
+.refresh-icon{ font-size:36px;margin-bottom:10px;display:block; }
+.refresh-title{ font-family:'Playfair Display',serif;font-size:24px;font-weight:800;color:#1a1a2e;margin-bottom:8px; }
+.refresh-sub{ font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:12px;white-space:pre-line; }
 
 /* Action buttons */
 .swipe-actions{ display:flex;align-items:center;justify-content:center;gap:16px;margin-top:28px; }
@@ -189,9 +198,12 @@
             </div>
             <h1 class="gps-title">Ready to meet your<br><span>future partner?</span></h1>
             <p class="gps-sub">Enable GPS on your device to start seeing your dreamy partner nearby</p>
-            <button class="btn-gps" id="enableGpsBtn" onclick="enableGPS()">
+            <button type="button" class="btn-gps" id="enableGpsBtn" onclick="enableGPS()">
                 <ion-icon name="location-outline" class="gps-icon"></ion-icon>
                 Enable GPS
+            </button>
+            <button type="button" class="btn-gps-skip" id="skipGpsBtn" onclick="continueWithoutPreciseLocation()">
+                Continue with my profile city (no GPS)
             </button>
             <div class="privacy-note">
                 <ion-icon name="lock-closed-outline" style="font-size:12px;"></ion-icon>
@@ -204,8 +216,8 @@
     <div class="profiles-screen" id="profilesScreen">
         <div class="profiles-header">
             <h5>💑 Nearby Partners</h5>
-            <div class="gps-active-badge">
-                <div class="gps-dot"></div> GPS Active
+            <div class="gps-active-badge" id="locationModeBadge">
+                <div class="gps-dot" id="locationModeDot"></div> <span id="locationModeLabel">GPS Active</span>
             </div>
         </div>
 
@@ -244,6 +256,15 @@
                 <ion-icon name="chatbubble-outline"></ion-icon> Send a Message
             </button>
             <button class="btn-match-close" onclick="closeMatch()">Keep Swiping</button>
+        </div>
+    </div>
+
+    {{-- Refresh rules popup --}}
+    <div class="refresh-popup" id="refreshPopup">
+        <div class="refresh-box">
+            <span class="refresh-icon">🔁</span>
+            <div class="refresh-title">Updating matches</div>
+            <div class="refresh-sub" id="refreshPopupMsg">Loading rules...</div>
         </div>
     </div>
 
@@ -341,24 +362,68 @@ let currentX    = 0;
 let activeCard  = null;
 let userLat     = null;
 let userLng     = null;
+let usedPreciseGps = false;
+let refreshPopupTimeout  = null;
+let lastProfilesMeta = {
+    isPremiumViewer: false,
+    isExhausted: false,
+    hasNearbyPool: true
+};
 
 // ── GPS Enable ──
+// Note: Browsers only allow geolocation on HTTPS, or on http://localhost / 127.0.0.1.
+// Using http://192.168.x.x from another device will usually fail — use “Continue with profile city” or HTTPS.
+
+function resetGpsButton(btn) {
+    if (!btn) return;
+    btn.innerHTML = `<ion-icon name="location-outline" class="gps-icon"></ion-icon> Enable GPS`;
+    btn.style.background = '';
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+}
+
+function continueWithoutPreciseLocation() {
+    usedPreciseGps = false;
+    userLat = null;
+    userLng = null;
+    resetGpsButton(document.getElementById('enableGpsBtn'));
+    showProfilesScreen();
+}
+
 function enableGPS() {
     const btn = document.getElementById('enableGpsBtn');
     btn.innerHTML = `<ion-icon name="reload-outline" style="font-size:19px;animation:spin .8s linear infinite;"></ion-icon> Enabling...`;
     btn.style.opacity = '.8';
     btn.style.pointerEvents = 'none';
 
+    if (!window.isSecureContext) {
+        resetGpsButton(btn);
+        showToast('Location needs HTTPS (or open via http://127.0.0.1 on this computer). Use “Continue with my profile city” below, or try another browser.');
+        return;
+    }
+
+    if (!navigator.geolocation) {
+        resetGpsButton(btn);
+        showToast('This browser does not support location. Use “Continue with my profile city”.');
+        return;
+    }
+
     const onSuccess = (pos) => {
+        usedPreciseGps = true;
         userLat = pos.coords.latitude;
         userLng = pos.coords.longitude;
 
-        // Save location to backend
-        fetch('{{ route("user.marriage.location") }}', {
+        fetch('/user/marriage/location', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ latitude: userLat, longitude: userLng })
-        });
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': CSRF,
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ latitude: userLat, longitude: userLng }),
+        }).catch(() => {});
 
         btn.innerHTML = `<ion-icon name="checkmark-circle-outline" style="font-size:19px;"></ion-icon> GPS Enabled!`;
         btn.style.background = 'linear-gradient(135deg,#16a34a,#22c55e)';
@@ -366,35 +431,78 @@ function enableGPS() {
         setTimeout(showProfilesScreen, 600);
     };
 
-    const onError = () => {
-        // Allow without GPS (will show profiles without distance)
-        btn.innerHTML = `<ion-icon name="checkmark-circle-outline" style="font-size:19px;"></ion-icon> Continue`;
-        btn.style.opacity = '1';
-        setTimeout(showProfilesScreen, 400);
+    const onError = (err) => {
+        resetGpsButton(btn);
+        let msg = 'Could not get your location.';
+        if (err && err.code === 1) {
+            msg = 'Location permission denied. Allow location in the browser address bar, or use “Continue with my profile city”.';
+        } else if (err && err.code === 2) {
+            msg = 'Location unavailable. Try again or use “Continue with my profile city”.';
+        } else if (err && err.code === 3) {
+            msg = 'Location timed out. Try again outdoors or with Wi‑Fi, or use profile city.';
+        }
+        showToast(msg);
     };
 
-    if (!navigator.geolocation) { onError(); return; }
-    navigator.geolocation.getCurrentPosition(onSuccess, onError, { timeout: 8000 });
+    navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 60000,
+    });
 }
 
 function showProfilesScreen() {
     document.getElementById('gpsScreen').style.display        = 'none';
     document.getElementById('profilesScreen').style.display   = 'block';
+
+    const badge = document.getElementById('locationModeBadge');
+    const dot = document.getElementById('locationModeDot');
+    const label = document.getElementById('locationModeLabel');
+    if (usedPreciseGps && userLat != null && userLng != null) {
+        if (label) label.textContent = 'GPS active';
+        if (badge) { badge.style.background = '#f0fdf4'; badge.style.color = '#16a34a'; }
+        if (dot) dot.style.background = '#16a34a';
+    } else {
+        if (label) label.textContent = 'City-based';
+        if (badge) { badge.style.background = '#fffbeb'; badge.style.color = '#b45309'; }
+        if (dot) dot.style.background = '#f59e0b';
+    }
+
     fetchProfiles();
 }
 
 // ── Fetch Profiles ──
 function fetchProfiles() {
-    const lat = userLat || 0;
-    const lng = userLng || 0;
+    const params = new URLSearchParams();
+    if (userLat != null && userLng != null) {
+        params.set('latitude', String(userLat));
+        params.set('longitude', String(userLng));
+    }
 
-    fetch(`{{ route('user.marriage.nearby') }}?latitude=${lat}&longitude=${lng}`, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    const q = params.toString();
+    fetch('/user/marriage/nearby' + (q ? '?' + q : ''), {
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
     })
     .then(r => r.json())
     .then(data => {
+        if (data.gps_required) {
+            document.getElementById('profilesScreen').style.display = 'none';
+            document.getElementById('gpsScreen').style.display = 'flex';
+            showToast('Enable GPS first to load nearby profiles.');
+            return;
+        }
+
         profiles   = data.profiles || [];
         currentIdx = 0;
+        lastProfilesMeta = {
+            isPremiumViewer: !!data.is_premium_viewer,
+            isExhausted: !!data.is_exhausted,
+            hasNearbyPool: !!data.has_nearby_pool
+        };
         renderStack();
     })
     .catch(() => showToast('Could not load profiles. Try again.'));
@@ -408,6 +516,20 @@ function renderStack() {
 
     if (remaining.length === 0) {
         stack.style.display = 'none';
+        const noMoreTitle = document.querySelector('#noMoreCards h4');
+        const noMoreText = document.querySelector('#noMoreCards p');
+        const noMoreEmoji = document.querySelector('#noMoreCards .emoji');
+
+        if (lastProfilesMeta.isExhausted) {
+            if (noMoreEmoji) noMoreEmoji.textContent = '💫';
+            if (noMoreTitle) noMoreTitle.textContent = "You've seen everyone nearby!";
+            if (noMoreText) noMoreText.textContent = 'Check back later for new profiles in your area';
+        } else {
+            if (noMoreEmoji) noMoreEmoji.textContent = '📍';
+            if (noMoreTitle) noMoreTitle.textContent = 'No nearby profiles right now';
+            if (noMoreText) noMoreText.textContent = 'Try again later or widen your location availability.';
+        }
+
         document.getElementById('noMoreCards').style.display  = 'block';
         document.getElementById('swipeActions').style.display = 'none';
         return;
@@ -523,9 +645,10 @@ function doLike() {
     const p = profiles[currentIdx];
     if (!p) return;
 
-    fetch('{{ route("user.marriage.like") }}', {
+    fetch('/user/marriage/like', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': CSRF },
+        credentials: 'same-origin',
         body: JSON.stringify({ liked_id: p.id })
     })
     .then(r => r.json())
@@ -543,9 +666,10 @@ function doPass() {
     const p = profiles[currentIdx];
     if (!p) return;
 
-    fetch('{{ route("user.marriage.pass") }}', {
+    fetch('/user/marriage/pass', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': CSRF },
+        credentials: 'same-origin',
         body: JSON.stringify({ passed_id: p.id })
     }).catch(() => {});
 
@@ -556,9 +680,10 @@ function doFav() {
     const p = profiles[currentIdx];
     if (!p) return;
 
-    fetch('{{ route("user.marriage.favourite") }}', {
+    fetch('/user/marriage/favourite', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': CSRF },
+        credentials: 'same-origin',
         body: JSON.stringify({ favourite_id: p.id })
     })
     .then(r => r.json())
@@ -569,11 +694,24 @@ function doFav() {
 }
 
 function reloadProfiles() {
+    openRefreshPopup('Loading people based on your location mode (GPS or city).');
     document.getElementById('swipeStack').style.display   = '';
     document.getElementById('noMoreCards').style.display  = 'none';
     document.getElementById('swipeActions').style.display = '';
     document.getElementById('swipeStack').innerHTML = `<div class="stack-loading"><div class="spinner"></div> Loading...</div>`;
     fetchProfiles();
+}
+
+function openRefreshPopup(message){
+    const popup = document.getElementById('refreshPopup');
+    const msgEl = document.getElementById('refreshPopupMsg');
+    msgEl.textContent = message;
+    popup.classList.add('show');
+
+    clearTimeout(refreshPopupTimeout);
+    refreshPopupTimeout = setTimeout(() => {
+        popup.classList.remove('show');
+    }, 2200);
 }
 
 // ── Match popup ──
@@ -639,7 +777,6 @@ function populateDrawer(p) {
     const verifs = [
         { key:'phone', label:'Phone',   icon:'call-outline'   },
         { key:'email', label:'Email',   icon:'mail-outline'   },
-        { key:'id',    label:'ID Card', icon:'card-outline'   },
         { key:'photo', label:'Photo',   icon:'camera-outline' },
     ];
     document.getElementById('drawerVerif').innerHTML = verifs.map(v => {
@@ -671,9 +808,10 @@ function toggleDrawerFav() {
     const p = profiles[currentIdx];
     if (!p) return;
 
-    fetch('{{ route("user.marriage.favourite") }}', {
+    fetch('/user/marriage/favourite', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': CSRF },
+        credentials: 'same-origin',
         body: JSON.stringify({ favourite_id: p.id })
     })
     .then(r => r.json())

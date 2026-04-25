@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UserProfile extends Model
 {
@@ -11,6 +12,9 @@ class UserProfile extends Model
 
     protected $fillable = [
         'user_id',
+        'date_of_birth',
+        'city',
+        'country',
         'sect',
         'profession',
         'education',
@@ -22,6 +26,11 @@ class UserProfile extends Model
         'height_cm',
         'marital_status',
         'marriage_intentions',
+        'smoking',
+        'drinking',
+        'want_children',
+        'num_children',
+        'languages',
         'religion_practice',
         'born_muslim',
         'interests',
@@ -31,6 +40,7 @@ class UserProfile extends Model
     ];
 
     protected $casts = [
+        'date_of_birth'          => 'date',
         'notifications_enabled' => 'boolean',
         'hide_from_contacts'    => 'boolean',
         'height_cm'             => 'integer',
@@ -43,6 +53,13 @@ class UserProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(UserProfilePhoto::class, 'user_id', 'user_id')
+            ->orderByDesc('is_main')
+            ->orderBy('order');
     }
 
     // -----------------------------------------------
@@ -86,6 +103,13 @@ class UserProfile extends Model
         ];
 
         $filled = collect($fields)->filter(fn($f) => !empty($this->$f))->count();
-        return (int) round(($filled / count($fields)) * 100);
+
+        // Profile photo is required for full completion.
+        $hasPhoto = UserProfilePhoto::where('user_id', $this->user_id)->exists();
+
+        $totalCriteria = count($fields) + 1; // +1 for photo
+        $completed = $filled + ($hasPhoto ? 1 : 0);
+
+        return (int) round(($completed / $totalCriteria) * 100);
     }
 }

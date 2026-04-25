@@ -2,20 +2,16 @@
 <html lang="en">
 
 <head>
-  <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- loader-->
   <link href="{{ asset('admin/assets/css/pace.min.css') }}" rel="stylesheet">
   <script src="{{ asset('admin/assets/js/pace.min.js') }}"></script>
 
-  <!--plugins-->
   <link href="{{ asset('admin/assets/plugins/simplebar/css/simplebar.css') }}" rel="stylesheet">
   <link href="{{ asset('admin/assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css') }}" rel="stylesheet">
   <link href="{{ asset('admin/assets/plugins/metismenu/css/metisMenu.min.css') }}" rel="stylesheet">
 
-  <!-- CSS Files -->
   <link href="{{ asset('admin/assets/css/bootstrap.min.css') }}" rel="stylesheet">
   <link href="{{ asset('admin/assets/css/bootstrap-extended.css') }}" rel="stylesheet">
   <link href="{{ asset('admin/assets/css/style.css') }}" rel="stylesheet">
@@ -23,14 +19,11 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 
-  <!--Theme Styles-->
   <link href="{{ asset('admin/assets/css/dark-theme.css') }}" rel="stylesheet">
   <link href="{{ asset('admin/assets/css/semi-dark.css') }}" rel="stylesheet">
   <link href="{{ asset('admin/assets/css/header-colors.css') }}" rel="stylesheet">
 
-
   <style>
-    /* ── Sidebar Scroll Fix ── */
     .sidebar-wrapper {
       position: fixed !important;
       top: 0 !important;
@@ -41,28 +34,16 @@
       overflow-x: hidden !important;
       z-index: 11 !important;
     }
-    /* Hide default scrollbar, show custom thin one */
-    .sidebar-wrapper::-webkit-scrollbar {
-      width: 4px !important;
-    }
-    .sidebar-wrapper::-webkit-scrollbar-track {
-      background: transparent !important;
-    }
-    .sidebar-wrapper::-webkit-scrollbar-thumb {
-      background-color: rgba(255,255,255,0.25) !important;
-      border-radius: 4px !important;
-    }
-    .sidebar-wrapper {
-      scrollbar-width: thin !important;
-      scrollbar-color: rgba(255,255,255,0.25) transparent !important;
-    }
+    .sidebar-wrapper::-webkit-scrollbar { width: 4px !important; }
+    .sidebar-wrapper::-webkit-scrollbar-track { background: transparent !important; }
+    .sidebar-wrapper::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.25) !important; border-radius: 4px !important; }
+    .sidebar-wrapper { scrollbar-width: thin !important; scrollbar-color: rgba(255,255,255,0.25) transparent !important; }
   </style>
-  <title>Fobia - Bootstrap5 Admin Template</title>
+
+  <title>Fobia - Admin Panel</title>
 </head>
 
 <body>
-
-  <!--start wrapper-->
   <div class="wrapper">
 
     <!--start sidebar -->
@@ -76,7 +57,6 @@
         </div>
       </div>
 
-      <!--navigation-->
       <ul class="metismenu" id="menu">
 
         {{-- ── MAIN ── --}}
@@ -100,47 +80,64 @@
         </li>
 
         <li>
-          <a href="javascript:;">
+          <a href="{{route('admin.verification.index')}}">
             <div class="parent-icon"><ion-icon name="shield-checkmark-outline"></ion-icon></div>
             <div class="menu-title">Verification</div>
           </a>
         </li>
 
         <li>
-          <a href="javascript:;">
+          <a href="{{route('admin.matches.index')}}">
             <div class="parent-icon"><ion-icon name="heart-outline"></ion-icon></div>
             <div class="menu-title">Matches</div>
           </a>
         </li>
 
         <li>
-          <a href="javascript:;">
+          <a href="{{route('admin.messages.index')}}">
             <div class="parent-icon"><ion-icon name="chatbubbles-outline"></ion-icon></div>
             <div class="menu-title">Messages Monitoring</div>
+          </a>
+        </li>
+
+        {{-- Proposals sent/received by users --}}
+        <li>
+          <a href="{{route('admin.proposals.index')}}">
+            <div class="parent-icon"><ion-icon name="paper-plane-outline"></ion-icon></div>
+            <div class="menu-title">Proposals</div>
           </a>
         </li>
 
         {{-- ── MODERATION ── --}}
         <li class="menu-label">Moderation</li>
 
+
         <li>
-          <a href="{{ route('admin.reports.index') }}">
-            <div class="parent-icon"><ion-icon name="warning-outline"></ion-icon></div>
-            <div class="menu-title">Reports</div>
+          <a href="{{route('admin.blocked_users.index')}}">
+            <div class="parent-icon"><ion-icon name="ban-outline"></ion-icon></div>
+            <div class="menu-title">Blocked Users</div>
           </a>
         </li>
 
         <li>
-          <a href="javascript:;">
+          <a href="{{route('admin.content.index')}}">
             <div class="parent-icon"><ion-icon name="eye-outline"></ion-icon></div>
             <div class="menu-title">Content Moderation</div>
           </a>
         </li>
 
         <li>
-          <a href="javascript:;">
+          <a href="{{route('admin.support_tickets.index')}}">
             <div class="parent-icon"><ion-icon name="ticket-outline"></ion-icon></div>
             <div class="menu-title">Support Tickets</div>
+          </a>
+        </li>
+
+        {{-- User reported problems --}}
+        <li>
+          <a href="{{route('admin.problem_reports.index')}}">
+            <div class="parent-icon"><ion-icon name="flag-outline"></ion-icon></div>
+            <div class="menu-title">Reports</div>
           </a>
         </li>
 
@@ -148,14 +145,14 @@
         <li class="menu-label">Finance</li>
 
         <li>
-          <a href="javascript:;">
+          <a href="{{ route('admin.subscriptions.index') }}">
             <div class="parent-icon"><ion-icon name="diamond-outline"></ion-icon></div>
             <div class="menu-title">Subscriptions</div>
           </a>
         </li>
 
         <li>
-          <a href="javascript:;">
+          <a href="{{ route('admin.payments.index') }}">
             <div class="parent-icon"><ion-icon name="card-outline"></ion-icon></div>
             <div class="menu-title">Payments</div>
           </a>
@@ -166,22 +163,41 @@
 
         <li>
           <a href="{{ route('admin.notifications.index') }}">
-            <div class="parent-icon"><ion-icon name="people-outline"></ion-icon></div>
+            <div class="parent-icon"><ion-icon name="notifications-outline"></ion-icon></div>
             <div class="menu-title">Notifications</div>
           </a>
         </li>
 
         <li>
-          <a href="javascript:;">
+          <a href="{{ route('admin.marketing.index') }}">
             <div class="parent-icon"><ion-icon name="megaphone-outline"></ion-icon></div>
             <div class="menu-title">Marketing</div>
           </a>
         </li>
 
         <li>
-          <a href="javascript:;">
+          <a href="{{ route('admin.analytics.index') }}">
             <div class="parent-icon"><ion-icon name="bar-chart-outline"></ion-icon></div>
             <div class="menu-title">Analytics</div>
+          </a>
+        </li>
+
+        {{-- ── CONTENT ── --}}
+        <li class="menu-label">Content</li>
+
+        {{-- FAQs manager --}}
+        <li>
+          <a href="{{ route('admin.faqs.index') }}">
+            <div class="parent-icon"><ion-icon name="help-circle-outline"></ion-icon></div>
+            <div class="menu-title">FAQs</div>
+          </a>
+        </li>
+
+        {{-- Privacy Policy & Terms editor --}}
+        <li>
+          <a href="{{ route('admin.legal.index') }}">
+            <div class="parent-icon"><ion-icon name="document-text-outline"></ion-icon></div>
+            <div class="menu-title">Privacy & Terms</div>
           </a>
         </li>
 
@@ -189,7 +205,7 @@
         <li class="menu-label">System</li>
 
         <li>
-          <a href="javascript:;">
+          <a href="{{ route('admin.management.index') }}">
             <div class="parent-icon"><ion-icon name="people-circle-outline"></ion-icon></div>
             <div class="menu-title">Admin Management</div>
           </a>
@@ -214,7 +230,6 @@
         </li>
 
       </ul>
-      <!--end navigation-->
     </aside>
     <!--end sidebar -->
 
@@ -237,16 +252,19 @@
 
         <div class="top-navbar-right ms-auto">
           <ul class="navbar-nav align-items-center">
+
             <li class="nav-item">
               <a class="nav-link mobile-search-button" href="javascript:;">
                 <div class=""><ion-icon name="search-outline"></ion-icon></div>
               </a>
             </li>
+
             <li class="nav-item">
               <a class="nav-link dark-mode-icon" href="javascript:;">
                 <div class="mode-icon"><ion-icon name="moon-outline"></ion-icon></div>
               </a>
             </li>
+
             <li class="nav-item dropdown dropdown-large dropdown-apps">
               <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="javascript:;" data-bs-toggle="dropdown">
                 <div class=""><ion-icon name="apps-outline"></ion-icon></div>
@@ -280,6 +298,7 @@
                 </div>
               </div>
             </li>
+
             <li class="nav-item dropdown dropdown-large">
               <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="javascript:;" data-bs-toggle="dropdown">
                 <div class="position-relative">
@@ -308,53 +327,17 @@
                     <div class="d-flex align-items-center">
                       <div class="notify text-danger"><ion-icon name="person-outline"></ion-icon></div>
                       <div class="flex-grow-1">
-                        <h6 class="msg-name">New Customers<span class="msg-time float-end">14 Sec ago</span></h6>
+                        <h6 class="msg-name">New Customers <span class="msg-time float-end">14 Sec ago</span></h6>
                         <p class="msg-info">5 new user registered</p>
                       </div>
                     </div>
                   </a>
                   <a class="dropdown-item" href="javascript:;">
                     <div class="d-flex align-items-center">
-                      <div class="notify text-success"><ion-icon name="document-outline"></ion-icon></div>
+                      <div class="notify text-warning"><ion-icon name="flag-outline"></ion-icon></div>
                       <div class="flex-grow-1">
-                        <h6 class="msg-name">24 PDF File<span class="msg-time float-end">19 min ago</span></h6>
-                        <p class="msg-info">The pdf files generated</p>
-                      </div>
-                    </div>
-                  </a>
-                  <a class="dropdown-item" href="javascript:;">
-                    <div class="d-flex align-items-center">
-                      <div class="notify text-info"><ion-icon name="checkmark-done-outline"></ion-icon></div>
-                      <div class="flex-grow-1">
-                        <h6 class="msg-name">New Product Approved <span class="msg-time float-end">2 hrs ago</span></h6>
-                        <p class="msg-info">Your new product has approved</p>
-                      </div>
-                    </div>
-                  </a>
-                  <a class="dropdown-item" href="javascript:;">
-                    <div class="d-flex align-items-center">
-                      <div class="notify text-warning"><ion-icon name="send-outline"></ion-icon></div>
-                      <div class="flex-grow-1">
-                        <h6 class="msg-name">Time Response <span class="msg-time float-end">28 min ago</span></h6>
-                        <p class="msg-info">5.1 min avarage time response</p>
-                      </div>
-                    </div>
-                  </a>
-                  <a class="dropdown-item" href="javascript:;">
-                    <div class="d-flex align-items-center">
-                      <div class="notify text-danger"><ion-icon name="chatbox-ellipses-outline"></ion-icon></div>
-                      <div class="flex-grow-1">
-                        <h6 class="msg-name">New Comments <span class="msg-time float-end">4 hrs ago</span></h6>
-                        <p class="msg-info">New customer comments recived</p>
-                      </div>
-                    </div>
-                  </a>
-                  <a class="dropdown-item" href="javascript:;">
-                    <div class="d-flex align-items-center">
-                      <div class="notify text-primary"><ion-icon name="albums-outline"></ion-icon></div>
-                      <div class="flex-grow-1">
-                        <h6 class="msg-name">New 24 authors<span class="msg-time float-end">1 day ago</span></h6>
-                        <p class="msg-info">24 new authors joined last week</p>
+                        <h6 class="msg-name">New Report <span class="msg-time float-end">5 min ago</span></h6>
+                        <p class="msg-info">A user has been reported</p>
                       </div>
                     </div>
                   </a>
@@ -362,17 +345,8 @@
                     <div class="d-flex align-items-center">
                       <div class="notify text-success"><ion-icon name="shield-outline"></ion-icon></div>
                       <div class="flex-grow-1">
-                        <h6 class="msg-name">Your item is shipped <span class="msg-time float-end">5 hrs ago</span></h6>
-                        <p class="msg-info">Successfully shipped your item</p>
-                      </div>
-                    </div>
-                  </a>
-                  <a class="dropdown-item" href="javascript:;">
-                    <div class="d-flex align-items-center">
-                      <div class="notify text-warning"><ion-icon name="cafe-outline"></ion-icon></div>
-                      <div class="flex-grow-1">
-                        <h6 class="msg-name">Defense Alerts <span class="msg-time float-end">2 weeks ago</span></h6>
-                        <p class="msg-info">45% less alerts last 4 weeks</p>
+                        <h6 class="msg-name">Verification Request <span class="msg-time float-end">1 hr ago</span></h6>
+                        <p class="msg-info">New profile verification pending</p>
                       </div>
                     </div>
                   </a>
@@ -382,6 +356,7 @@
                 </a>
               </div>
             </li>
+
             <li class="nav-item dropdown dropdown-user-setting">
               <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="javascript:;" data-bs-toggle="dropdown">
                 <div class="user-setting">
@@ -394,8 +369,8 @@
                     <div class="d-flex flex-row align-items-center gap-2">
                       <img src="{{ asset('admin/assets/images/avatars/06.png') }}" alt="" class="rounded-circle" width="54" height="54">
                       <div class="">
-                        <h6 class="mb-0 dropdown-user-name">Jhon Deo</h6>
-                        <small class="mb-0 dropdown-user-designation text-secondary">UI Developer</small>
+                        <h6 class="mb-0 dropdown-user-name">Admin</h6>
+                        <small class="mb-0 dropdown-user-designation text-secondary">Super Admin</small>
                       </div>
                     </div>
                   </a>
@@ -404,54 +379,32 @@
                 <li>
                   <a class="dropdown-item" href="javascript:;">
                     <div class="d-flex align-items-center">
-                      <div class=""><ion-icon name="person-outline"></ion-icon></div>
+                      <ion-icon name="person-outline"></ion-icon>
                       <div class="ms-3"><span>Profile</span></div>
                     </div>
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" href="javascript:;">
+                  <a class="dropdown-item" href="{{ route('admin.settings') }}">
                     <div class="d-flex align-items-center">
-                      <div class=""><ion-icon name="settings-outline"></ion-icon></div>
-                      <div class="ms-3"><span>Setting</span></div>
-                    </div>
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="javascript:;">
-                    <div class="d-flex align-items-center">
-                      <div class=""><ion-icon name="speedometer-outline"></ion-icon></div>
-                      <div class="ms-3"><span>Dashboard</span></div>
-                    </div>
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="javascript:;">
-                    <div class="d-flex align-items-center">
-                      <div class=""><ion-icon name="wallet-outline"></ion-icon></div>
-                      <div class="ms-3"><span>Earnings</span></div>
-                    </div>
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="javascript:;">
-                    <div class="d-flex align-items-center">
-                      <div class=""><ion-icon name="cloud-download-outline"></ion-icon></div>
-                      <div class="ms-3"><span>Downloads</span></div>
+                      <ion-icon name="settings-outline"></ion-icon>
+                      <div class="ms-3"><span>Settings</span></div>
                     </div>
                   </a>
                 </li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
-                  <a class="dropdown-item" href="javascript:;">
+                  <a class="dropdown-item text-danger" href="{{ route('logout') }}"
+                     onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <div class="d-flex align-items-center">
-                      <div class=""><ion-icon name="log-out-outline"></ion-icon></div>
+                      <ion-icon name="log-out-outline"></ion-icon>
                       <div class="ms-3"><span>Logout</span></div>
                     </div>
                   </a>
                 </li>
               </ul>
             </li>
+
           </ul>
         </div>
       </nav>
@@ -460,21 +413,14 @@
 
     @yield('admincontent')
 
-    <!--start footer-->
     <footer class="footer">
-      <div class="footer-text">
-        Copyright © 2023. All right reserved.
-      </div>
+      <div class="footer-text">Copyright © 2023. All right reserved.</div>
     </footer>
-    <!--end footer-->
 
-    <!--Start Back To Top Button-->
-    <a href="javaScript:;" class="back-to-top">
+    <a href="javascript:;" class="back-to-top">
       <ion-icon name="arrow-up-outline"></ion-icon>
     </a>
-    <!--End Back To Top Button-->
 
-    <!--start switcher-->
     <div class="switcher-body">
       <button class="btn btn-primary btn-switcher shadow-sm" type="button" data-bs-toggle="offcanvas"
         data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">
@@ -483,7 +429,7 @@
       <div class="offcanvas offcanvas-end shadow border-start-0 p-2" data-bs-scroll="true" data-bs-backdrop="false"
         tabindex="-1" id="offcanvasScrolling">
         <div class="offcanvas-header border-bottom">
-          <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Theme Customizer</h5>
+          <h5 class="offcanvas-title">Theme Customizer</h5>
           <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
@@ -519,30 +465,22 @@
         </div>
       </div>
     </div>
-    <!--end switcher-->
 
-    <!--start overlay-->
     <div class="overlay nav-toggle-icon"></div>
-    <!--end overlay-->
 
   </div>
-  <!--end wrapper-->
 
-  <!-- JS Files-->
-  <script src="admin/assets/js/jquery.min.js"></script>
-  <script src="admin/assets/plugins/simplebar/js/simplebar.min.js"></script>
-  <script src="admin/assets/plugins/metismenu/js/metisMenu.min.js"></script>
-  <script src="admin/assets/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ asset('admin/assets/js/jquery.min.js') }}"></script>
+  <script src="{{ asset('admin/assets/plugins/simplebar/js/simplebar.min.js') }}"></script>
+  <script src="{{ asset('admin/assets/plugins/metismenu/js/metisMenu.min.js') }}"></script>
+  <script src="{{ asset('admin/assets/js/bootstrap.bundle.min.js') }}"></script>
   <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
-  <!--plugins-->
-  <script src="admin/assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js"></script>
-  <script src="admin/assets/plugins/apexcharts-bundle/js/apexcharts.min.js"></script>
-  <script src="admin/assets/plugins/easyPieChart/jquery.easypiechart.js"></script>
-  <script src="admin/assets/plugins/chartjs/chart.min.js"></script>
-  <script src="admin/assets/js/index.js"></script>
-  <!-- Main JS-->
-  <script src="admin/assets/js/main.js"></script>
+  <script src="{{ asset('admin/assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js') }}"></script>
+  <script src="{{ asset('admin/assets/plugins/apexcharts-bundle/js/apexcharts.min.js') }}"></script>
+  <script src="{{ asset('admin/assets/plugins/easyPieChart/jquery.easypiechart.js') }}"></script>
+  <script src="{{ asset('admin/assets/plugins/chartjs/chart.min.js') }}"></script>
+  <script src="{{ asset('admin/assets/js/index.js') }}"></script>
+  <script src="{{ asset('admin/assets/js/main.js') }}"></script>
 
 </body>
-
 </html>

@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\UserProfile;
 use App\Models\UserProfilePhoto;
 use App\Models\ProfileView;
+use App\Models\Proposal;
+use App\Models\MatchRequest;
+use App\Models\ChatRequest;
+use App\Support\CountryCities;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +17,30 @@ use Illuminate\Validation\Rule;
 
 class UserProfileController extends Controller
 {
+    private function invalidatePhotoVerificationForAuthUser(): void
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return;
+        }
+
+        $user->forceFill([
+            'photo_verified' => false,
+            'photo_verified_at' => null,
+        ])->save();
+    }
+
+    private function refreshCompletionForAuthUser(): void
+    {
+        $profile = UserProfile::where('user_id', Auth::id())->first();
+        if (!$profile) {
+            return;
+        }
+
+        $profile->profile_completion = $profile->calculateCompletion();
+        $profile->save();
+    }
+
     // -----------------------------------------------
     // VALIDATION RULES
     // -----------------------------------------------
@@ -62,8 +91,8 @@ class UserProfileController extends Controller
             // ── NEW FIELDS ──
             'date_of_birth'  => ['nullable', 'date', 'before:-18 years'],
             'city'           => ['nullable', 'string', 'max:100'],
-            'country'        => ['nullable', 'string', 'max:100'],
             'smoking'        => ['nullable', 'string', Rule::in(['Never', 'Occasionally', 'Yes, regularly', 'Prefer not to say'])],
+            'drinking'       => ['nullable', 'string', Rule::in(['Never', 'Occasionally', 'Yes, regularly', 'Prefer not to say'])],
             'want_children'  => ['nullable', 'string', Rule::in(['Yes', 'No', 'Open to it', 'Have children already'])],
             'num_children'   => ['nullable', 'string', Rule::in(['1', '2', '3', '4+', 'Prefer not to say'])],
             'languages'      => ['nullable', 'string', 'max:255'],
@@ -76,6 +105,32 @@ class UserProfileController extends Controller
     public function show(Request $request)
     {
         $profile = UserProfile::where('user_id', Auth::id())->first();
+        $user = Auth::user();
+
+        // Prefill edit form from user table when profile table is partially empty.
+        // This keeps old registration data visible instead of blank selects/inputs.
+        if ($profile && $request->boolean('edit')) {
+            if (empty($profile->date_of_birth) && !empty($user?->birthday)) {
+                $profile->date_of_birth = $user->birthday;
+            }
+            // Country is fixed at registration; always show that value in the profile editor.
+            $profile->country = (string) ($user?->country ?? '');
+            if (empty($profile->nationality)) {
+                $profile->nationality = (string) ($user?->nationality ?? $user?->country ?? '');
+            }
+            if (empty($profile->marital_status) && !empty($user?->marital_status)) {
+                $profile->marital_status = $user->marital_status;
+            }
+        }
+
+        if ($profile) {
+            // Always keep completion in sync with actual filled data + photos.
+            $freshCompletion = $profile->calculateCompletion();
+            if ((int) $profile->profile_completion !== (int) $freshCompletion) {
+                $profile->profile_completion = $freshCompletion;
+                $profile->save();
+            }
+        }
         $photos  = UserProfilePhoto::where('user_id', Auth::id())
                     ->orderBy('is_main', 'desc')
                     ->orderBy('order')
@@ -99,6 +154,47 @@ class UserProfileController extends Controller
     }
 
     // -----------------------------------------------
+    // VIEW OTHER USER PROFILE (Saved Profiles -> View)
+    // -----------------------------------------------
+    public function view(User $user)
+    {
+        if ($user->id === Auth::id()) {
+            return redirect()->route('user.profile');
+        }
+
+        $profile = UserProfile::with('photos')->where('user_id', $user->id)->first();
+        $photos  = $profile?->photos ?? collect();
+
+        // Log profile view
+        ProfileView::updateOrCreate(
+            [
+                'viewer_id' => Auth::id(),
+                'viewed_id' => $user->id,
+            ],
+            [
+                'seen'      => false,
+                'viewed_at' => now(),
+            ]
+        );
+
+        $authId = Auth::id();
+        $otherId = $user->id;
+
+        $messagingUnlocked = MatchRequest::messagingUnlockedBetween($authId, $otherId);
+        $proposalAccepted = Proposal::hasAcceptedBetween($authId, $otherId);
+        $pendingChatRequest = ChatRequest::pendingBetween($authId, $otherId);
+
+        return view('user.profile-view', compact(
+            'user',
+            'profile',
+            'photos',
+            'messagingUnlocked',
+            'proposalAccepted',
+            'pendingChatRequest'
+        ));
+    }
+
+    // -----------------------------------------------
     // EDIT (Open Edit Page)
     // -----------------------------------------------
     public function edit()
@@ -117,7 +213,20 @@ class UserProfileController extends Controller
     // -----------------------------------------------
     public function store(Request $request)
     {
-        $validated = $request->validate($this->rules());
+        $rules = $this->rules();
+        $registrationCountry = (string) (Auth::user()->country ?? '');
+        $rules['city'] = [
+            'required',
+            'string',
+            'max:100',
+            Rule::in(CountryCities::citiesFor($registrationCountry)),
+        ];
+        $validated = $request->validate($rules);
+        $validated['country'] = $registrationCountry;
+
+        // Checkboxes are absent when unchecked; normalize explicitly.
+        $validated['notifications_enabled'] = $request->boolean('notifications_enabled');
+        $validated['hide_from_contacts'] = $request->boolean('hide_from_contacts');
 
         $profile = UserProfile::updateOrCreate(
             ['user_id' => Auth::id()],
@@ -136,12 +245,35 @@ class UserProfileController extends Controller
     // -----------------------------------------------
     public function update(Request $request)
     {
-        $validated = $request->validate($this->rules());
+        $rules = $this->rules();
+        $registrationCountry = (string) (Auth::user()->country ?? '');
+        $rules['city'] = [
+            'required',
+            'string',
+            'max:100',
+            Rule::in(CountryCities::citiesFor($registrationCountry)),
+        ];
+        $validated = $request->validate($rules);
 
-        $profile = UserProfile::updateOrCreate(
-            ['user_id' => Auth::id()],
-            $validated
-        );
+        $profile = UserProfile::firstOrNew(['user_id' => Auth::id()]);
+
+        // Keep existing values unless field is actually submitted.
+        // This prevents accidental wipe of profile data on partial edit posts.
+        foreach (array_keys($this->rules()) as $field) {
+            if (! $request->has($field)) {
+                unset($validated[$field]);
+            }
+        }
+
+        // Country always matches registration (never taken from the request body).
+        $validated['country'] = $registrationCountry;
+
+        // Normalize toggles (unchecked checkboxes are not posted).
+        $validated['notifications_enabled'] = $request->boolean('notifications_enabled');
+        $validated['hide_from_contacts'] = $request->boolean('hide_from_contacts');
+
+        $profile->fill($validated);
+        $profile->save();
 
         $profile->profile_completion = $profile->calculateCompletion();
         $profile->save();
@@ -169,7 +301,7 @@ class UserProfileController extends Controller
     {
         UserProfile::where('user_id', Auth::id())->delete();
 
-        return redirect()->route('user.dashboard')
+        return redirect()->route('user.discover')
             ->with('success', 'Profile deleted.');
     }
 
@@ -197,6 +329,12 @@ class UserProfileController extends Controller
             'order'   => $count,
         ]);
 
+        if ($photo->is_main) {
+            $this->invalidatePhotoVerificationForAuthUser();
+        }
+
+        $this->refreshCompletionForAuthUser();
+
         return response()->json([
             'id'      => $photo->id,
             'url'     => asset('storage/' . $path),
@@ -218,7 +356,41 @@ class UserProfileController extends Controller
             ->where('user_id', Auth::id())
             ->update(['is_main' => true]);
 
+        $this->invalidatePhotoVerificationForAuthUser();
+
         return response()->json(['success' => true]);
+    }
+
+    // -----------------------------------------------
+    // TOGGLE BLUR (AJAX) - Premium only
+    // -----------------------------------------------
+    public function toggleBlurPhoto(Request $request)
+    {
+        $request->validate(['photo_id' => 'required|exists:user_profile_photos,id']);
+
+        $user = Auth::user();
+        if (!$user || !$user->isPremium()) {
+            return response()->json([
+                'error' => 'Blur option is available for premium users only.',
+                'upgrade_url' => '/user/premium/plans',
+            ], 403);
+        }
+
+        $photo = UserProfilePhoto::where('id', $request->photo_id)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if (!$photo) {
+            return response()->json(['error' => 'Photo not found.'], 404);
+        }
+
+        $photo->is_blurred = !$photo->is_blurred;
+        $photo->save();
+
+        return response()->json([
+            'success' => true,
+            'is_blurred' => (bool) $photo->is_blurred,
+        ]);
     }
 
     // -----------------------------------------------
@@ -246,7 +418,11 @@ class UserProfileController extends Controller
                 ->orderBy('order')
                 ->first();
             if ($next) $next->update(['is_main' => true]);
+
+            $this->invalidatePhotoVerificationForAuthUser();
         }
+
+        $this->refreshCompletionForAuthUser();
 
         return response()->json(['success' => true]);
     }
